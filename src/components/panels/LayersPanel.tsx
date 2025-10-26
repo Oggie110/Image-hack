@@ -11,7 +11,9 @@ import {
   LockClosedIcon,
   LockOpen1Icon,
   MagicWandIcon,
+  ImageIcon,
 } from '@radix-ui/react-icons';
+import { pickImageFile, loadImageFromFile, getImageDimensions } from '@/utils/imageHelpers';
 
 export function LayersPanel() {
   const {
@@ -23,6 +25,43 @@ export function LayersPanel() {
     updateLayer,
     selectLayers,
   } = useFrameStore();
+
+  const handleImportImage = async () => {
+    const selectedFrame = getSelectedFrame();
+    if (!selectedFrame) return;
+
+    const file = await pickImageFile();
+    if (!file) return;
+
+    try {
+      const imageUrl = await loadImageFromFile(file);
+      const { width, height } = await getImageDimensions(imageUrl);
+
+      // Scale image to fit within frame if it's larger
+      let layerWidth = width;
+      let layerHeight = height;
+      const maxDimension = Math.min(selectedFrame.width * 0.8, selectedFrame.height * 0.8);
+
+      if (width > maxDimension || height > maxDimension) {
+        const scale = maxDimension / Math.max(width, height);
+        layerWidth = width * scale;
+        layerHeight = height * scale;
+      }
+
+      // Add layer at center of frame
+      useFrameStore.getState().addLayer(selectedFrame.id, {
+        name: file.name.replace(/\.[^/.]+$/, ''), // Remove file extension
+        type: 'image',
+        imageUrl,
+        width: layerWidth,
+        height: layerHeight,
+        x: (selectedFrame.width - layerWidth) / 2,
+        y: (selectedFrame.height - layerHeight) / 2,
+      });
+    } catch (error) {
+      console.error('Failed to import image:', error);
+    }
+  };
 
   const selectedFrame = getSelectedFrame();
 
@@ -45,17 +84,10 @@ export function LayersPanel() {
           variant="outline"
           size="sm"
           className="w-full"
-          onClick={() => {
-            // Add a placeholder layer (will be replaced with proper image import)
-            useFrameStore.getState().addLayer(selectedFrame.id, {
-              name: 'New Layer',
-              type: 'image',
-              width: 200,
-              height: 200,
-            });
-          }}
+          onClick={handleImportImage}
         >
-          Add Layer
+          <ImageIcon className="mr-2" />
+          Import Image
         </Button>
       </div>
 

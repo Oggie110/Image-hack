@@ -2,7 +2,16 @@ import { useEffect, useRef } from 'react';
 import { Canvas } from 'fabric';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { useFrameStore } from '@/stores/useFrameStore';
-import { createFrameObject, updateFrameObject, getFrameFromCanvas, removeFrameFromCanvas } from '@/utils/fabricHelpers';
+import {
+  createFrameObject,
+  updateFrameObject,
+  getFrameFromCanvas,
+  removeFrameFromCanvas,
+  createLayerObject,
+  updateLayerObject,
+  getLayerFromCanvas,
+  removeLayerFromCanvas,
+} from '@/utils/fabricHelpers';
 
 export function InfiniteCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -11,7 +20,7 @@ export function InfiniteCanvas() {
   const lastPosRef = useRef({ x: 0, y: 0 });
 
   const { viewport, setPan } = useCanvasStore();
-  const { frames, selectedFrameId, selectFrame, updateFrame } = useFrameStore();
+  const { frames, selectedFrameId, selectedLayerIds, selectFrame, selectLayers, updateFrame, updateLayer, getFrame } = useFrameStore();
 
   // Initialize Fabric.js canvas
   useEffect(() => {
@@ -37,18 +46,30 @@ export function InfiniteCanvas() {
 
     window.addEventListener('resize', handleResize);
 
-    // Handle frame selection
+    // Handle frame and layer selection
     canvas.on('selection:created', (e) => {
       const target = e.selected?.[0] as any;
-      if (target?.frameId) {
+      if (target?.layerId) {
+        // Layer selected
+        selectLayers([target.layerId]);
         selectFrame(target.frameId);
+      } else if (target?.frameId) {
+        // Frame selected
+        selectFrame(target.frameId);
+        selectLayers([]);
       }
     });
 
     canvas.on('selection:updated', (e) => {
       const target = e.selected?.[0] as any;
-      if (target?.frameId) {
+      if (target?.layerId) {
+        // Layer selected
+        selectLayers([target.layerId]);
         selectFrame(target.frameId);
+      } else if (target?.frameId) {
+        // Frame selected
+        selectFrame(target.frameId);
+        selectLayers([]);
       }
     });
 
@@ -56,10 +77,26 @@ export function InfiniteCanvas() {
       // Don't clear selection when clicking canvas - keep current selection
     });
 
-    // Handle frame modifications (drag, resize) - update position and size in store
+    // Handle frame and layer modifications (drag, resize, rotate) - update position and size in store
     canvas.on('object:modified', (e) => {
       const target = e.target as any;
-      if (target?.frameId) {
+
+      if (target?.layerId) {
+        // Layer modified
+        const frame = getFrame(target.frameId);
+        if (!frame) return;
+
+        const updates: any = {
+          x: Math.round((target.left || 0) - frame.x),
+          y: Math.round((target.top || 0) - frame.y),
+          scaleX: target.scaleX || 1,
+          scaleY: target.scaleY || 1,
+          rotation: target.angle || 0,
+        };
+
+        updateLayer(target.frameId, target.layerId, updates);
+      } else if (target?.frameId) {
+        // Frame modified
         const objects = target.getObjects();
         const background = objects[0];
 
@@ -203,6 +240,83 @@ export function InfiniteCanvas() {
       canvas.renderAll();
     }
   }, [selectedFrameId]);
+
+  // Render layers on canvas
+  useEffect(() => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+
+    // Get all layers from all frames
+    const allLayers: Array<{ layer: any; frame: any }> = [];
+    frames.forEach((frame) => {
+      frame.layers.forEach((layer) => {
+        allLayers.push({ layer, frame });
+      });
+    });
+
+    // Get current layer IDs on canvas
+    const canvasLayerIds = new Set(
+      (canvas.getObjects() as any[])
+        .filter((obj) => obj.layerId)
+        .map((obj) => obj.layerId)
+    );
+
+    // Get layer IDs from store
+    const storeLayerIds = new Set(allLayers.map((l) => l.layer.id));
+
+    // Add new layers or update existing ones
+    allLayers.forEach(({ layer, frame }) => {
+      if (!canvasLayerIds.has(layer.id)) {
+        // Add new layer
+        if (layer.imageUrl) {
+          createLayerObject(layer, frame, layer.imageUrl)
+            .then((layerObject) => {
+              if (layerObject) {
+                canvas.add(layerObject);
+
+                // Select if this is the selected layer
+                if (selectedLayerIds.includes(layer.id)) {
+                  canvas.setActiveObject(layerObject);
+                }
+
+                canvas.renderAll();
+              }
+            })
+            .catch((err) => {
+              console.error('Failed to create layer object:', err);
+            });
+        }
+      } else {
+        // Update existing layer
+        const layerObject = getLayerFromCanvas(canvas, layer.id);
+        if (layerObject) {
+          updateLayerObject(layerObject, layer, frame);
+        }
+      }
+    });
+
+    // Remove deleted layers
+    canvasLayerIds.forEach((layerId) => {
+      if (!storeLayerIds.has(layerId as string)) {
+        removeLayerFromCanvas(canvas, layerId as string);
+      }
+    });
+
+    canvas.renderAll();
+  }, [frames, selectedLayerIds]);
+
+  // Handle layer selection from store (e.g., clicking in layers panel)
+  useEffect(() => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas || selectedLayerIds.length === 0) return;
+
+    const layerId = selectedLayerIds[0];
+    const layerObject = getLayerFromCanvas(canvas, layerId);
+    if (layerObject && canvas.getActiveObject() !== layerObject) {
+      canvas.setActiveObject(layerObject);
+      canvas.renderAll();
+    }
+  }, [selectedLayerIds]);
 
   return (
     <div className="flex-1 relative overflow-hidden bg-muted">
