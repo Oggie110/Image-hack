@@ -11,13 +11,15 @@ import {
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { useFrameStore } from '@/stores/useFrameStore';
 import { FRAME_PRESETS } from '@/types';
-import { PlusIcon, MagicWandIcon, GearIcon } from '@radix-ui/react-icons';
+import { PlusIcon, MagicWandIcon, GearIcon, DownloadIcon } from '@radix-ui/react-icons';
 import { AIGenerateDialog } from '@/components/ai/AIGenerateDialog';
+import { ExportDialog } from '@/components/export/ExportDialog';
 
 export function Toolbar() {
-  const { viewport, zoomIn, zoomOut, resetZoom } = useCanvasStore();
+  const { viewport, zoomIn, zoomOut, resetZoom, fabricCanvas } = useCanvasStore();
   const { addFrame } = useFrameStore();
   const [showAIDialog, setShowAIDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const handleAddFrame = (presetName?: string) => {
     const preset = FRAME_PRESETS.find((p) => p.name === presetName);
@@ -78,6 +80,12 @@ export function Toolbar() {
           AI Generate
         </Button>
 
+        {/* Export */}
+        <Button variant="outline" size="sm" onClick={() => setShowExportDialog(true)}>
+          <DownloadIcon className="mr-2" />
+          Export
+        </Button>
+
         {/* Zoom Controls */}
         <div className="flex items-center gap-1 ml-4">
           <Button variant="outline" size="sm" onClick={zoomOut}>
@@ -123,6 +131,13 @@ export function Toolbar() {
 
       {/* AI Generation Dialog */}
       <AIGenerateDialog open={showAIDialog} onOpenChange={setShowAIDialog} />
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        fabricCanvas={fabricCanvas}
+      />
     </div>
   );
 }

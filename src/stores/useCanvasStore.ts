@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { Canvas } from 'fabric';
 import type { ViewportState, CanvasConfig } from '@/types';
 
 interface CanvasStore {
@@ -8,7 +9,11 @@ interface CanvasStore {
   // Canvas configuration
   config: CanvasConfig;
 
+  // Fabric canvas instance
+  fabricCanvas: Canvas | null;
+
   // Actions
+  setFabricCanvas: (canvas: Canvas | null) => void;
   setZoom: (zoom: number) => void;
   setPan: (panX: number, panY: number) => void;
   zoomIn: () => void;
@@ -29,6 +34,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     maxZoom: 64,
     gridSize: 20,
     gridColor: '#e5e7eb',
+  },
+
+  fabricCanvas: null,
+
+  setFabricCanvas: (canvas) => {
+    set({ fabricCanvas: canvas });
   },
 
   setZoom: (zoom) => {

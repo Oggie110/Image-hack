@@ -19,7 +19,7 @@ export function InfiniteCanvas() {
   const isPanningRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
 
-  const { viewport, setPan } = useCanvasStore();
+  const { viewport, setPan, setFabricCanvas } = useCanvasStore();
   const { frames, selectedFrameId, selectedLayerIds, selectFrame, selectLayers, updateFrame, updateLayer, getFrame } = useFrameStore();
 
   // Initialize Fabric.js canvas
@@ -34,6 +34,7 @@ export function InfiniteCanvas() {
     });
 
     fabricCanvasRef.current = canvas;
+    setFabricCanvas(canvas); // Store in global store for export
 
     // Handle window resize
     const handleResize = () => {
