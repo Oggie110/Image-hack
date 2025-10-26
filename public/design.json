@@ -1,0 +1,479 @@
+{
+  "meta": {
+    "name": "AI Design App (Lovart\u2011style)",
+    "version": "1.0.0",
+    "created_at": "2025-10-26T12:17:18.457984+01:00",
+    "description": "Design system + layout spec to replicate the lightweight AI\u2011assisted design app UI shown in screenshots (projects grid, canvas with left panels, right chat, bottom tool tray).",
+    "grid_unit": 4,
+    "platform": [
+      "Web",
+      "Desktop web"
+    ],
+    "font_stack": [
+      "Inter",
+      "SF Pro Text",
+      "Segoe UI",
+      "Roboto",
+      "system-ui",
+      "Helvetica Neue",
+      "Arial"
+    ]
+  },
+  "theme": {
+    "color": {
+      "bg_app": "#F5F7FA",
+      "bg_surface": "#FFFFFF",
+      "bg_surface_alt": "#FBFCFE",
+      "bg_canvas": "#FFFFFF",
+      "bg_toolbar": "#FFFFFF",
+      "bg_hover": "#F3F6FB",
+      "bg_selected": "#E7F0FF",
+      "divider": "#E6E9EF",
+      "outline": "#D7DCE5",
+      "shadow": "rgba(17, 24, 39, 0.08)",
+      "text_primary": "#0B1220",
+      "text_secondary": "#5B6575",
+      "text_muted": "#8E99A8",
+      "icon": "#6B7687",
+      "icon_muted": "#A7B0BE",
+      "accent": "#2D6AE3",
+      "accent_hover": "#2259C5",
+      "accent_soft": "#EDF3FF",
+      "success": "#16A34A",
+      "warning": "#F59E0B",
+      "danger": "#DC2626",
+      "brand_magenta": "#E63EAB",
+      "brand_cyan": "#1FB6FF"
+    },
+    "radii": {
+      "xs": 6,
+      "sm": 8,
+      "md": 10,
+      "lg": 12,
+      "xl": 16,
+      "pill": 999
+    },
+    "shadows": {
+      "sm": "0 1px 2px rgba(16, 24, 40, 0.04)",
+      "md": "0 2px 8px rgba(16, 24, 40, 0.08)",
+      "lg": "0 8px 24px rgba(16, 24, 40, 0.12)"
+    },
+    "spacing": {
+      "0": 0,
+      "1": 4,
+      "2": 8,
+      "3": 12,
+      "4": 16,
+      "5": 20,
+      "6": 24,
+      "7": 28,
+      "8": 32,
+      "10": 40,
+      "12": 48,
+      "16": 64,
+      "20": 80,
+      "24": 96
+    },
+    "typography": {
+      "font_family": "Inter, SF Pro Text, system-ui, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif",
+      "weights": {
+        "regular": 400,
+        "medium": 500,
+        "semibold": 600,
+        "bold": 700
+      },
+      "sizes_px": {
+        "xs": 11,
+        "sm": 12,
+        "md": 14,
+        "lg": 16,
+        "xl": 18,
+        "2xl": 20
+      },
+      "line_heights": {
+        "tight": 1.2,
+        "normal": 1.45,
+        "relaxed": 1.6
+      }
+    }
+  },
+  "layout": {
+    "header": {
+      "height_px": 56,
+      "background": "{theme.color.bg_surface}",
+      "border_bottom": "{theme.color.divider}",
+      "padding_x_px": 16,
+      "logo_area_width_px": 140,
+      "right_cluster_gap_px": 8,
+      "items": [
+        {
+          "type": "logo",
+          "size_px": 24,
+          "text": "Lovart",
+          "font_weight": "600"
+        },
+        {
+          "type": "spacer"
+        },
+        {
+          "type": "language_dropdown"
+        },
+        {
+          "type": "upgrade_badge",
+          "style": "filled",
+          "bg": "{theme.color.accent}",
+          "text_color": "#FFFFFF",
+          "height_px": 28,
+          "radius": 8,
+          "padding_x_px": 10
+        },
+        {
+          "type": "notifications_icon"
+        },
+        {
+          "type": "avatar",
+          "size_px": 28,
+          "shape": "circle"
+        }
+      ]
+    },
+    "left_rail": {
+      "width_px": 56,
+      "background": "{theme.color.bg_surface}",
+      "border_right": "{theme.color.divider}",
+      "item": {
+        "size_px": 40,
+        "radius": 12,
+        "gap_px": 8,
+        "icon_size_px": 18,
+        "colors": {
+          "idle_icon": "{theme.color.icon}",
+          "hover_bg": "{theme.color.bg_hover}",
+          "active_bg": "{theme.color.bg_selected}",
+          "active_icon": "{theme.color.accent}"
+        }
+      },
+      "items_top": [
+        "home",
+        "projects",
+        "assets"
+      ],
+      "items_bottom": [
+        "settings"
+      ]
+    },
+    "panels": {
+      "left_sidebar": {
+        "width_px": 280,
+        "sections": [
+          {
+            "key": "history",
+            "title": "History",
+            "empty_state_icon": "image",
+            "empty_state_text": "No history yet"
+          },
+          {
+            "key": "layers",
+            "title": "Layer",
+            "row_height_px": 36,
+            "thumbnail_size_px": 28,
+            "gap_px": 6
+          }
+        ],
+        "background": "{theme.color.bg_surface}",
+        "divider_color": "{theme.color.divider}",
+        "padding_px": 12
+      },
+      "right_sidebar": {
+        "width_px": 360,
+        "title": "Chat / Tasks",
+        "background": "{theme.color.bg_surface}",
+        "padding_px": 12,
+        "message_bubble_radius": 12,
+        "input_height_px": 44
+      }
+    },
+    "canvas_area": {
+      "background": "{theme.color.bg_app}",
+      "min_gutter_px": 24,
+      "surface_shadow": "{theme.shadows.sm}",
+      "mockup_board": {
+        "background": "{theme.color.bg_surface}",
+        "shadow": "{theme.shadows.md}",
+        "radius": 12
+      }
+    },
+    "bottom_tray": {
+      "height_px": 56,
+      "background": "{theme.color.bg_surface}",
+      "border_top": "{theme.color.divider}",
+      "clusters": {
+        "left": [
+          {
+            "type": "play_dropdown",
+            "button_width_px": 44,
+            "icon": "play"
+          },
+          {
+            "type": "stroke_weight_switcher",
+            "width_px": 44
+          },
+          {
+            "type": "zoom",
+            "controls": [
+              "-",
+              "+"
+            ]
+          }
+        ],
+        "center": [
+          {
+            "type": "tool_switcher",
+            "tooltip": "Select/Hand",
+            "menu": [
+              "Select",
+              "Hand tool"
+            ]
+          }
+        ],
+        "right": [
+          {
+            "type": "chat_runner",
+            "label": "Chats",
+            "counter": 0,
+            "images_counter": 0,
+            "primary_action": "Run All"
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "button": {
+      "sizes": {
+        "sm": {
+          "height_px": 28,
+          "padding_x_px": 10,
+          "radius": 8,
+          "font": "sm"
+        },
+        "md": {
+          "height_px": 32,
+          "padding_x_px": 12,
+          "radius": 10,
+          "font": "md"
+        },
+        "lg": {
+          "height_px": 40,
+          "padding_x_px": 16,
+          "radius": 12,
+          "font": "lg"
+        }
+      },
+      "variants": {
+        "primary": {
+          "bg": "{theme.color.accent}",
+          "bg_hover": "{theme.color.accent_hover}",
+          "text": "#FFFFFF",
+          "shadow": "{theme.shadows.sm}"
+        },
+        "soft": {
+          "bg": "{theme.color.accent_soft}",
+          "text": "{theme.color.accent}",
+          "border": "{theme.color.outline}"
+        },
+        "ghost": {
+          "bg": "transparent",
+          "text": "{theme.color.text_secondary}",
+          "hover_bg": "{theme.color.bg_hover}"
+        },
+        "icon": {
+          "size_px": 32,
+          "radius": 10,
+          "icon_color": "{theme.color.icon}",
+          "hover_bg": "{theme.color.bg_hover}",
+          "active_bg": "{theme.color.bg_selected}",
+          "active_icon": "{theme.color.accent}"
+        }
+      }
+    },
+    "card": {
+      "radius": 12,
+      "shadow": "{theme.shadows.md}",
+      "border": "{theme.color.divider}",
+      "padding_px": 12,
+      "project_thumb_ratios": {
+        "default": [
+          3,
+          2
+        ],
+        "mobile": [
+          9,
+          19
+        ]
+      },
+      "project_card_sizes_px": {
+        "sm": [
+          240,
+          160
+        ],
+        "md": [
+          280,
+          180
+        ],
+        "lg": [
+          320,
+          200
+        ]
+      },
+      "new_project_dashed_border": {
+        "color": "{theme.color.outline}",
+        "dash": [
+          6,
+          6
+        ],
+        "icon_size_px": 18
+      }
+    },
+    "list_row": {
+      "height_px": 36,
+      "padding_x_px": 8,
+      "gap_px": 8,
+      "hover_bg": "{theme.color.bg_hover}",
+      "selected_bg": "{theme.color.bg_selected}",
+      "selected_bar_width_px": 2
+    },
+    "tabs": {
+      "height_px": 36,
+      "radius": 10,
+      "active_bg": "{theme.color.bg_selected}",
+      "inactive_color": "{theme.color.text_secondary}",
+      "gap_px": 8
+    },
+    "tooltip": {
+      "bg": "#0F172A",
+      "text": "#E5E7EB",
+      "radius": 8,
+      "padding_px": 8,
+      "shadow": "0 6px 20px rgba(0,0,0,.2)"
+    },
+    "input": {
+      "height_px": 36,
+      "radius": 10,
+      "bg": "{theme.color.bg_surface}",
+      "border": "{theme.color.outline}",
+      "placeholder": "{theme.color.text_muted}",
+      "padding_x_px": 12
+    },
+    "badge": {
+      "radius": 8,
+      "bg": "{theme.color.bg_selected}",
+      "text": "{theme.color.accent}",
+      "padding_x_px": 8,
+      "height_px": 20
+    },
+    "avatar": {
+      "sizes_px": {
+        "sm": 24,
+        "md": 28,
+        "lg": 32
+      },
+      "shape": "circle"
+    }
+  },
+  "screens": {
+    "projects": {
+      "header_title": "Projects",
+      "grid": {
+        "gap_px": 24,
+        "columns": {
+          "min_card_px": 280,
+          "gutter_px": 24
+        }
+      },
+      "cards": {
+        "thumbnail_radius": 10,
+        "title_font": "md",
+        "subtitle_font": "xs",
+        "subtitle_color": "{theme.color.text_muted}"
+      }
+    },
+    "editor": {
+      "columns": {
+        "left_sidebar_width_px": "{layout.panels.left_sidebar.width_px}",
+        "canvas_min_gutter_px": "{layout.canvas_area.min_gutter_px}",
+        "right_sidebar_width_px": "{layout.panels.right_sidebar.width_px}"
+      },
+      "left_toolbar": {
+        "floating_dock": true,
+        "items": [
+          "add",
+          "shapes",
+          "text",
+          "pen",
+          "grid"
+        ],
+        "item_size_px": 40,
+        "gap_px": 8
+      },
+      "canvas": {
+        "board_shadow": "{theme.shadows.md}",
+        "board_radius": 12,
+        "checkerboard": false
+      },
+      "right_chat": {
+        "input_placeholder": "Start with an idea or task\u2026",
+        "send_button": {
+          "variant": "primary",
+          "icon": "paper-plane"
+        }
+      },
+      "bottom_tray": "{layout.bottom_tray}"
+    }
+  },
+  "iconography": {
+    "style": "outline",
+    "stroke_width": 1.5,
+    "corner": "rounded",
+    "sizes_px": {
+      "sm": 16,
+      "md": 18,
+      "lg": 20
+    }
+  },
+  "interaction": {
+    "states": {
+      "focus_ring": {
+        "color": "#7AA7FF",
+        "width_px": 2,
+        "offset_px": 2,
+        "radius_add_px": 2
+      },
+      "drag_shadow": "0 8px 24px rgba(16, 24, 40, .18)",
+      "selected_outline": {
+        "color": "{theme.color.accent}",
+        "width_px": 1
+      }
+    },
+    "cursor_map": {
+      "select": "default",
+      "hand": "grab",
+      "dragging": "grabbing",
+      "pen": "crosshair",
+      "text": "text"
+    }
+  },
+  "tokens_for_ai_prompts": {
+    "style_tags": [
+      "minimal white workspace",
+      "rounded 10\u201312px corners",
+      "subtle 1px #E6E9EF dividers",
+      "soft shadows",
+      "blue accent controls",
+      "left rail icon dock",
+      "left panels: History + Layers",
+      "right chat assistant panel",
+      "bottom tool tray with play/zoom and tool switcher"
+    ]
+  }
+}

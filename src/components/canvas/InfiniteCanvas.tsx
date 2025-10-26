@@ -25,6 +25,42 @@ export function InfiniteCanvas() {
   const { frames, selectedFrameId, selectedLayerIds, selectFrame, selectLayers, updateFrame, updateLayer, getFrame } = useFrameStore();
   const { currentTool, settings } = useDrawingStore();
 
+  // Enforce correct z-order for all objects on canvas
+  // Order: Frames first (lowest), then layers in order (per frame)
+  const enforceZOrder = (canvas: Canvas, currentFrames: typeof frames) => {
+    // Collect objects in the desired order
+    const orderedObjects: any[] = [];
+
+    // Step 1: Add all frames first (lowest layer)
+    currentFrames.forEach((frame) => {
+      const frameObj = getFrameFromCanvas(canvas, frame.id);
+      if (frameObj) {
+        orderedObjects.push(frameObj);
+      }
+    });
+
+    // Step 2: Add all layers in order (per frame)
+    // frame.layers[0] should render FIRST (behind)
+    // frame.layers[1] should render SECOND (in front of 0)
+    currentFrames.forEach((frame) => {
+      frame.layers.forEach((layer) => {
+        const layerObj = getLayerFromCanvas(canvas, layer.id);
+        if (layerObj) {
+          orderedObjects.push(layerObj);
+        }
+      });
+    });
+
+    // Rebuild the canvas._objects array with correct order
+    const canvasObjects = canvas.getObjects();
+
+    // Only reorder if we have all objects accounted for
+    if (orderedObjects.length === canvasObjects.length) {
+      (canvas as any)._objects = orderedObjects;
+      canvas.renderAll();
+    }
+  };
+
   // Initialize Fabric.js canvas
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -34,6 +70,7 @@ export function InfiniteCanvas() {
       height: window.innerHeight - 56, // Account for toolbar
       backgroundColor: '#fafafa',
       selection: false, // Disable box selection for now
+      preserveObjectStacking: true, // Prevent auto-bring-to-front on selection
     });
 
     fabricCanvasRef.current = canvas;
@@ -112,6 +149,10 @@ export function InfiniteCanvas() {
 
         canvas.renderAll();
       }
+
+      // Enforce z-order in real-time during any object movement
+      // This ensures layers maintain correct stacking while being dragged
+      enforceZOrder(canvas, frames);
     });
 
     // Handle frame and layer modifications (drag, resize, rotate) - update position and size in store
@@ -366,49 +407,7 @@ export function InfiniteCanvas() {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
 
-    // Update z-order for all layers based on their position in the frames array
-    frames.forEach((frame) => {
-      // Layers at the start of the array should be at the bottom (rendered first)
-      // Layers at the end should be on top (rendered last)
-      frame.layers.forEach((layer, index) => {
-        const layerObj = getLayerFromCanvas(canvas, layer.id);
-        if (layerObj) {
-          // Use the correct Fabric.js API methods
-          const allObjects = canvas.getObjects();
-          const currentIndex = allObjects.indexOf(layerObj);
-
-          if (currentIndex !== -1) {
-            // Calculate how many times to move
-            // We want index 0 to be at the bottom, and higher indices on top
-            const targetIndex = index;
-            const diff = targetIndex - currentIndex;
-
-            if (diff > 0) {
-              // Bring forward
-              for (let i = 0; i < diff; i++) {
-                canvas.bringObjectForward(layerObj);
-              }
-            } else if (diff < 0) {
-              // Send backward
-              for (let i = 0; i < Math.abs(diff); i++) {
-                canvas.sendObjectBackwards(layerObj);
-              }
-            }
-          }
-        }
-      });
-    });
-
-    // CRITICAL: Ensure all frames are below all layers
-    // Get all frame objects
-    const frameObjects = canvas.getObjects().filter((obj: any) => obj.frameId && !obj.layerId);
-
-    // Send each frame to the back
-    frameObjects.forEach((frameObj) => {
-      canvas.sendObjectToBack(frameObj);
-    });
-
-    canvas.renderAll();
+    enforceZOrder(canvas, frames);
   }, [frames]);
 
   // Handle layer selection from store (e.g., clicking in layers panel)
