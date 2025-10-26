@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,12 @@ import {
 import { useAIStore } from '@/stores/useAIStore';
 import { useFrameStore } from '@/stores/useFrameStore';
 import { aiService } from '@/services/ai/AIService';
+import {
+  GENERATION_MODES,
+  applyModeToPrompt,
+  getModeNegativePrompt,
+  type GenerationMode
+} from '@/services/ai/generationModes';
 import { Loader2Icon, SparklesIcon } from 'lucide-react';
 
 interface AIGenerateDialogProps {
@@ -34,11 +40,24 @@ export function AIGenerateDialog({ open, onOpenChange }: AIGenerateDialogProps) 
   const { getSelectedFrame, addLayer } = useFrameStore();
   const [localPrompt, setLocalPrompt] = useState(settings.prompt);
   const [localNegativePrompt, setLocalNegativePrompt] = useState(settings.negativePrompt);
+  const [selectedMode, setSelectedMode] = useState<GenerationMode>(GENERATION_MODES[6]); // Default to 'custom'
 
   const selectedFrame = getSelectedFrame();
   const providers = aiService.getAvailableProviders();
   const currentProvider = providers.find((p) => p.current);
   const models = aiService.getSupportedModels();
+
+  // Apply mode settings when mode changes
+  useEffect(() => {
+    if (selectedMode.id === 'custom') return;
+
+    if (selectedMode.guidanceScale !== undefined) {
+      updateSettings({ guidanceScale: selectedMode.guidanceScale });
+    }
+    if (selectedMode.steps !== undefined) {
+      updateSettings({ steps: selectedMode.steps });
+    }
+  }, [selectedMode]);
 
   const handleGenerate = async () => {
     if (!localPrompt.trim()) {
@@ -61,10 +80,14 @@ export function AIGenerateDialog({ open, onOpenChange }: AIGenerateDialogProps) 
         negativePrompt: localNegativePrompt,
       });
 
+      // Apply mode prompt template
+      const finalPrompt = applyModeToPrompt(selectedMode, localPrompt);
+      const finalNegativePrompt = getModeNegativePrompt(selectedMode, localNegativePrompt);
+
       // Generate image
       const result = await aiService.generateImage({
-        prompt: localPrompt,
-        negativePrompt: localNegativePrompt,
+        prompt: finalPrompt,
+        negativePrompt: finalNegativePrompt,
         width: settings.width,
         height: settings.height,
         steps: settings.steps,
@@ -124,6 +147,30 @@ export function AIGenerateDialog({ open, onOpenChange }: AIGenerateDialogProps) 
             <div className="text-muted-foreground text-xs">
               {currentProvider?.type === 'free' ? '✓ Free' : '💰 Paid'} •
               {selectedFrame ? ` Adding to: ${selectedFrame.name}` : ' No frame selected'}
+            </div>
+          </div>
+
+          {/* Generation Mode */}
+          <div className="space-y-2">
+            <Label>Generation Mode</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {GENERATION_MODES.map((mode) => (
+                <Button
+                  key={mode.id}
+                  variant={selectedMode.id === mode.id ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedMode(mode)}
+                  className="h-auto py-3 px-3 flex flex-col items-start gap-1"
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <span className="text-lg">{mode.icon}</span>
+                    <span className="text-xs font-semibold flex-1 text-left">{mode.name}</span>
+                  </div>
+                  <span className="text-[10px] opacity-70 text-left leading-tight">
+                    {mode.description}
+                  </span>
+                </Button>
+              ))}
             </div>
           </div>
 
@@ -210,29 +257,44 @@ export function AIGenerateDialog({ open, onOpenChange }: AIGenerateDialogProps) 
             </div>
           </div>
 
-          {/* Quick Size Presets */}
+          {/* Quick Size Presets - Mode-specific or default */}
           <div className="flex gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateSettings({ width: 1024, height: 1024 })}
-            >
-              Square (1024×1024)
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateSettings({ width: 1024, height: 768 })}
-            >
-              Landscape (1024×768)
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateSettings({ width: 768, height: 1024 })}
-            >
-              Portrait (768×1024)
-            </Button>
+            {selectedMode.recommendedSizes && selectedMode.recommendedSizes.length > 0 ? (
+              selectedMode.recommendedSizes.map((size) => (
+                <Button
+                  key={size.label}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateSettings({ width: size.width, height: size.height })}
+                >
+                  {size.label}
+                </Button>
+              ))
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateSettings({ width: 1024, height: 1024 })}
+                >
+                  Square (1024×1024)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateSettings({ width: 1024, height: 768 })}
+                >
+                  Landscape (1024×768)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateSettings({ width: 768, height: 1024 })}
+                >
+                  Portrait (768×1024)
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Advanced Settings */}
