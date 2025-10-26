@@ -1,4 +1,4 @@
-export type LayerType = 'image' | 'ai-generated' | 'shape' | 'text';
+export type LayerType = 'image' | 'ai-generated' | 'shape' | 'text' | 'sketch';
 
 export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten';
 
@@ -12,6 +12,14 @@ export interface AIMetadata {
   width: number;
   height: number;
   generatedAt: string;
+}
+
+export interface SketchMetadata {
+  strokeColor: string;
+  strokeWidth: number;
+  fill?: string;
+  pathData?: string; // SVG path data for vector sketches
+  createdAt: string;
 }
 
 export interface Layer {
@@ -31,6 +39,9 @@ export interface Layer {
 
   // AI metadata (only for AI-generated layers)
   aiMetadata?: AIMetadata;
+
+  // Sketch metadata (only for sketch layers)
+  sketchMetadata?: SketchMetadata;
 
   // Position and size within frame
   x: number;

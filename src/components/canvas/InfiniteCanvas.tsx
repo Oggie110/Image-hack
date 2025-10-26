@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { Canvas } from 'fabric';
+import { Canvas, PencilBrush, Line, Rect, Circle } from 'fabric';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { useFrameStore } from '@/stores/useFrameStore';
+import { useDrawingStore } from '@/stores/useDrawingStore';
 import {
   createFrameObject,
   updateFrameObject,
@@ -12,6 +13,7 @@ import {
   getLayerFromCanvas,
   removeLayerFromCanvas,
 } from '@/utils/fabricHelpers';
+import { DrawingToolbar } from './DrawingToolbar';
 
 export function InfiniteCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -21,6 +23,7 @@ export function InfiniteCanvas() {
 
   const { viewport, setPan, setFabricCanvas } = useCanvasStore();
   const { frames, selectedFrameId, selectedLayerIds, selectFrame, selectLayers, updateFrame, updateLayer, getFrame } = useFrameStore();
+  const { currentTool, settings } = useDrawingStore();
 
   // Initialize Fabric.js canvas
   useEffect(() => {
@@ -319,9 +322,139 @@ export function InfiniteCanvas() {
     }
   }, [selectedLayerIds]);
 
+  // Handle drawing mode and tool changes
+  useEffect(() => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+
+    if (currentTool === 'select') {
+      // Disable drawing mode
+      canvas.isDrawingMode = false;
+      canvas.selection = false;
+      canvas.defaultCursor = 'default';
+      canvas.hoverCursor = 'move';
+    } else if (currentTool === 'pen') {
+      // Enable free drawing mode
+      canvas.isDrawingMode = true;
+      canvas.selection = false;
+
+      const brush = new PencilBrush(canvas);
+      brush.color = settings.strokeColor;
+      brush.width = settings.strokeWidth;
+      canvas.freeDrawingBrush = brush;
+    } else {
+      // Other tools (line, rectangle, circle) - will be handled by mouse events
+      canvas.isDrawingMode = false;
+      canvas.selection = false;
+      canvas.defaultCursor = 'crosshair';
+    }
+
+    canvas.renderAll();
+  }, [currentTool, settings]);
+
+  // Handle shape drawing (line, rectangle, circle)
+  useEffect(() => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+
+    let isDrawing = false;
+    let startX = 0;
+    let startY = 0;
+    let currentShape: Line | Rect | Circle | null = null;
+
+    const handleMouseDown = (e: any) => {
+      if (currentTool === 'select' || currentTool === 'pen') return;
+
+      const pointer = canvas.getPointer(e.e);
+      isDrawing = true;
+      startX = pointer.x;
+      startY = pointer.y;
+
+      const commonProps = {
+        stroke: settings.strokeColor,
+        strokeWidth: settings.strokeWidth,
+        fill: settings.fill || 'transparent',
+        selectable: false,
+      };
+
+      if (currentTool === 'line') {
+        currentShape = new Line([startX, startY, startX, startY], commonProps);
+        canvas.add(currentShape);
+      } else if (currentTool === 'rectangle') {
+        currentShape = new Rect({
+          left: startX,
+          top: startY,
+          width: 0,
+          height: 0,
+          ...commonProps,
+        });
+        canvas.add(currentShape);
+      } else if (currentTool === 'circle') {
+        currentShape = new Circle({
+          left: startX,
+          top: startY,
+          radius: 0,
+          ...commonProps,
+        });
+        canvas.add(currentShape);
+      }
+    };
+
+    const handleMouseMove = (e: any) => {
+      if (!isDrawing || !currentShape) return;
+
+      const pointer = canvas.getPointer(e.e);
+
+      if (currentTool === 'line' && currentShape instanceof Line) {
+        currentShape.set({ x2: pointer.x, y2: pointer.y });
+      } else if (currentTool === 'rectangle' && currentShape instanceof Rect) {
+        const width = pointer.x - startX;
+        const height = pointer.y - startY;
+        currentShape.set({
+          width: Math.abs(width),
+          height: Math.abs(height),
+          left: width > 0 ? startX : pointer.x,
+          top: height > 0 ? startY : pointer.y,
+        });
+      } else if (currentTool === 'circle' && currentShape instanceof Circle) {
+        const radius = Math.sqrt(
+          Math.pow(pointer.x - startX, 2) + Math.pow(pointer.y - startY, 2)
+        );
+        currentShape.set({ radius });
+      }
+
+      canvas.renderAll();
+    };
+
+    const handleMouseUp = () => {
+      if (!isDrawing) return;
+      isDrawing = false;
+
+      if (currentShape) {
+        currentShape.set({ selectable: true });
+        currentShape = null;
+      }
+
+      canvas.renderAll();
+    };
+
+    canvas.on('mouse:down', handleMouseDown);
+    canvas.on('mouse:move', handleMouseMove);
+    canvas.on('mouse:up', handleMouseUp);
+
+    return () => {
+      canvas.off('mouse:down', handleMouseDown);
+      canvas.off('mouse:move', handleMouseMove);
+      canvas.off('mouse:up', handleMouseUp);
+    };
+  }, [currentTool, settings]);
+
   return (
     <div className="flex-1 relative overflow-hidden bg-muted">
       <canvas ref={canvasRef} />
+
+      {/* Drawing Toolbar */}
+      <DrawingToolbar />
 
       {/* Instructions overlay */}
       {frames.length === 0 && (
