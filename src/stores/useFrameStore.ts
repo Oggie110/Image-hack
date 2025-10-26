@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { nanoid } from 'nanoid';
 import type { Frame, Layer, FramePreset } from '@/types';
+import { useHistoryStore } from './useHistoryStore';
 
 interface FrameStore {
   // State
@@ -24,6 +25,13 @@ interface FrameStore {
   toggleLayerVisibility: (frameId: string, layerId: string) => void;
   toggleLayerLock: (frameId: string, layerId: string) => void;
 
+  // History actions
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  restoreFrames: (frames: Frame[]) => void;
+
   // Utilities
   getFrame: (frameId: string) => Frame | undefined;
   getLayer: (frameId: string, layerId: string) => Layer | undefined;
@@ -36,6 +44,9 @@ export const useFrameStore = create<FrameStore>((set, get) => ({
   selectedLayerIds: [],
 
   addFrame: (preset, position) => {
+    // Push current state to history before modifying
+    useHistoryStore.getState().pushState(get().frames);
+
     const frameId = nanoid();
     const newFrame: Frame = {
       id: frameId,
@@ -66,6 +77,9 @@ export const useFrameStore = create<FrameStore>((set, get) => ({
   },
 
   deleteFrame: (frameId) => {
+    // Push current state to history before modifying
+    useHistoryStore.getState().pushState(get().frames);
+
     set((state) => ({
       frames: state.frames.filter((f) => f.id !== frameId),
       selectedFrameId: state.selectedFrameId === frameId ? null : state.selectedFrameId,
@@ -90,6 +104,9 @@ export const useFrameStore = create<FrameStore>((set, get) => ({
     const frame = get().getFrame(frameId);
     if (!frame) return;
 
+    // Push current state to history before modifying
+    useHistoryStore.getState().pushState(get().frames);
+
     const newFrameId = nanoid();
     const newFrame: Frame = {
       ...frame,
@@ -112,6 +129,9 @@ export const useFrameStore = create<FrameStore>((set, get) => ({
   },
 
   addLayer: (frameId, layerData) => {
+    // Push current state to history before modifying
+    useHistoryStore.getState().pushState(get().frames);
+
     const layerId = nanoid();
     const newLayer: Layer = {
       id: layerId,
@@ -145,6 +165,9 @@ export const useFrameStore = create<FrameStore>((set, get) => ({
   },
 
   deleteLayer: (frameId, layerId) => {
+    // Push current state to history before modifying
+    useHistoryStore.getState().pushState(get().frames);
+
     set((state) => ({
       frames: state.frames.map((f) =>
         f.id === frameId
@@ -213,5 +236,28 @@ export const useFrameStore = create<FrameStore>((set, get) => ({
   getSelectedFrame: () => {
     const { selectedFrameId, getFrame } = get();
     return selectedFrameId ? getFrame(selectedFrameId) : undefined;
+  },
+
+  // History actions
+  undo: () => {
+    const frames = get().frames;
+    const previousState = useHistoryStore.getState().undo(frames);
+    if (previousState) {
+      set({ frames: previousState });
+    }
+  },
+
+  redo: () => {
+    const nextState = useHistoryStore.getState().redo();
+    if (nextState) {
+      set({ frames: nextState });
+    }
+  },
+
+  canUndo: () => useHistoryStore.getState().canUndo(),
+  canRedo: () => useHistoryStore.getState().canRedo(),
+
+  restoreFrames: (frames: Frame[]) => {
+    set({ frames });
   },
 }));

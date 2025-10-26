@@ -34,6 +34,9 @@ export function KeyboardShortcutsDialog() {
         { keys: ['Ctrl', '/'], description: 'Show/hide keyboard shortcuts' },
         { keys: ['Delete'], description: 'Delete selected layer or frame' },
         { keys: ['Esc'], description: 'Switch to select tool' },
+        { keys: ['Ctrl', 'Z'], description: 'Undo' },
+        { keys: ['Ctrl', 'Shift', 'Z'], description: 'Redo' },
+        { keys: ['Ctrl', 'Y'], description: 'Redo (alternative)' },
       ],
     },
     {

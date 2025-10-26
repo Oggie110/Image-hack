@@ -167,9 +167,18 @@ export function LayersPanel() {
                     </div>
                   </div>
 
-                  {/* Layer thumbnail (placeholder) */}
-                  <div className="w-full h-16 bg-muted rounded border mb-2 flex items-center justify-center text-xs text-muted-foreground">
-                    {layer.type}
+                  {/* Layer thumbnail */}
+                  <div className="w-full h-16 bg-muted rounded border mb-2 flex items-center justify-center text-xs text-muted-foreground overflow-hidden">
+                    {layer.imageUrl ? (
+                      <img
+                        src={layer.imageUrl}
+                        alt={layer.name}
+                        className="w-full h-full object-contain"
+                        crossOrigin="anonymous"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">{layer.type}</span>
+                    )}
                   </div>
 
                   {/* Opacity slider */}

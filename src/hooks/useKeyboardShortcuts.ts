@@ -4,7 +4,7 @@ import { useDrawingStore } from '@/stores/useDrawingStore';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 
 export function useKeyboardShortcuts() {
-  const { selectedFrameId, selectedLayerIds, deleteLayer, deleteFrame } = useFrameStore();
+  const { selectedFrameId, selectedLayerIds, deleteLayer, deleteFrame, undo, redo, canUndo, canRedo } = useFrameStore();
   const { setTool } = useDrawingStore();
   const { zoomIn, zoomOut, resetZoom } = useCanvasStore();
 
@@ -81,21 +81,21 @@ export function useKeyboardShortcuts() {
         resetZoom();
       }
 
-      // TODO: Undo/Redo will be implemented later
-      // if (ctrl && !shift && e.key === 'z') {
-      //   e.preventDefault();
-      //   undo();
-      // }
+      // Undo
+      if (ctrl && !shift && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        if (canUndo()) {
+          undo();
+        }
+      }
 
-      // if (ctrl && shift && e.key === 'z') {
-      //   e.preventDefault();
-      //   redo();
-      // }
-
-      // if (ctrl && e.key === 'y') {
-      //   e.preventDefault();
-      //   redo();
-      // }
+      // Redo (Ctrl+Shift+Z or Ctrl+Y)
+      if ((ctrl && shift && (e.key === 'z' || e.key === 'Z')) || (ctrl && (e.key === 'y' || e.key === 'Y'))) {
+        e.preventDefault();
+        if (canRedo()) {
+          redo();
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -108,6 +108,10 @@ export function useKeyboardShortcuts() {
     selectedLayerIds,
     deleteLayer,
     deleteFrame,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
     setTool,
     zoomIn,
     zoomOut,
