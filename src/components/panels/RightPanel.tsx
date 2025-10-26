@@ -4,7 +4,7 @@ import { LayersPanel } from './LayersPanel';
 
 export function RightPanel() {
   return (
-    <div className="w-80 border-l bg-background flex flex-col">
+    <div className="w-96 border-l bg-background flex flex-col">
       <Tabs defaultValue="layers" className="flex-1 flex flex-col">
         <TabsList className="w-full rounded-none border-b">
           <TabsTrigger value="layers" className="flex-1">

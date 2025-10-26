@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -26,7 +27,11 @@ export function LayersPanel() {
     toggleLayerLock,
     updateLayer,
     selectLayers,
+    reorderLayers,
   } = useFrameStore();
+
+  const [draggedLayerId, setDraggedLayerId] = useState<string | null>(null);
+  const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null);
 
   const handleCreateNewLayer = () => {
     const selectedFrame = getSelectedFrame();
@@ -83,6 +88,55 @@ export function LayersPanel() {
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, layerId: string) => {
+    setDraggedLayerId(layerId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, layerId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverLayerId(layerId);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverLayerId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetLayerId: string) => {
+    e.preventDefault();
+
+    const selectedFrame = getSelectedFrame();
+    if (!selectedFrame || !draggedLayerId || draggedLayerId === targetLayerId) {
+      setDraggedLayerId(null);
+      setDragOverLayerId(null);
+      return;
+    }
+
+    // Get the current layer order (remember layers is reversed for display)
+    const layerIds = [...selectedFrame.layers].map(l => l.id);
+    const draggedIndex = layerIds.indexOf(draggedLayerId);
+    const targetIndex = layerIds.indexOf(targetLayerId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    // Remove dragged item and insert at target position
+    const newOrder = [...layerIds];
+    newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, draggedLayerId);
+
+    // Reorder layers in store
+    reorderLayers(selectedFrame.id, newOrder);
+
+    setDraggedLayerId(null);
+    setDragOverLayerId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedLayerId(null);
+    setDragOverLayerId(null);
+  };
+
   const selectedFrame = getSelectedFrame();
 
   if (!selectedFrame) {
@@ -122,7 +176,7 @@ export function LayersPanel() {
 
       {/* Layers list */}
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-2">
+        <div className="px-4 py-4 space-y-2">
           {layers.length === 0 ? (
             <div className="text-center text-sm text-muted-foreground py-8">
               No layers yet. Add one above.
@@ -130,14 +184,24 @@ export function LayersPanel() {
           ) : (
             layers.map((layer) => {
               const isSelected = selectedLayerIds.includes(layer.id);
+              const isDragging = draggedLayerId === layer.id;
+              const isDragOver = dragOverLayerId === layer.id;
 
               return (
                 <div
                   key={layer.id}
-                  className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, layer.id)}
+                  onDragOver={(e) => handleDragOver(e, layer.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, layer.id)}
+                  onDragEnd={handleDragEnd}
+                  className={`border rounded-lg p-3 cursor-move transition-colors ${
                     isSelected
                       ? 'border-primary bg-accent'
                       : 'border-border hover:border-primary/50'
+                  } ${isDragging ? 'opacity-50' : ''} ${
+                    isDragOver ? 'border-blue-500 border-2' : ''
                   }`}
                   onClick={() => selectLayers([layer.id])}
                 >

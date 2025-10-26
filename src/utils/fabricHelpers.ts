@@ -1,7 +1,7 @@
-import { Canvas, Rect, Text, Group, FabricImage } from 'fabric';
+import { Canvas, Rect, FabricImage } from 'fabric';
 import type { Frame, Layer } from '@/types';
 
-interface FrameObject extends Group {
+interface FrameObject extends Rect {
   frameId: string;
 }
 
@@ -11,8 +11,10 @@ interface LayerObject extends FabricImage {
 }
 
 export function createFrameObject(frame: Frame): FrameObject {
-  // Create frame background
-  const background = new Rect({
+  // Create simple frame rectangle (no labels - those will be in HTML overlay)
+  const rect = new Rect({
+    left: frame.x,
+    top: frame.y,
     width: frame.width,
     height: frame.height,
     fill: frame.backgroundColor,
@@ -20,31 +22,6 @@ export function createFrameObject(frame: Frame): FrameObject {
     strokeWidth: 2,
     rx: 0,
     ry: 0,
-  });
-
-  // Create frame label
-  const label = new Text(frame.name, {
-    fontSize: 14,
-    fill: '#3b82f6',
-    fontFamily: 'system-ui, sans-serif',
-    fontWeight: '500',
-    top: -24,
-    left: 0,
-  });
-
-  // Create dimension label
-  const dimensions = new Text(`${frame.width} × ${frame.height}`, {
-    fontSize: 12,
-    fill: '#6b7280',
-    fontFamily: 'system-ui, sans-serif',
-    top: -24,
-    left: label.width! + 8,
-  });
-
-  // Group all elements
-  const group = new Group([background, label, dimensions], {
-    left: frame.x,
-    top: frame.y,
     selectable: true,
     hasControls: true,
     hasBorders: true,
@@ -56,43 +33,29 @@ export function createFrameObject(frame: Frame): FrameObject {
     transparentCorners: false,
   }) as FrameObject;
 
-  group.frameId = frame.id;
+  rect.frameId = frame.id;
 
-  return group;
+  return rect;
 }
 
-export function updateFrameObject(frameObject: FrameObject, frame: Frame) {
-  const [background, label, dimensions] = frameObject.getObjects();
-
-  // Update background
-  if (background instanceof Rect) {
-    background.set({
-      width: frame.width,
-      height: frame.height,
-      fill: frame.backgroundColor,
-    });
+export function updateFrameObject(frameObject: FrameObject, frame: Frame): boolean {
+  // Safety check: ensure frameObject exists and is a Rect
+  if (!frameObject) {
+    console.warn('Invalid frame object passed to updateFrameObject');
+    return false;
   }
 
-  // Update label
-  if (label instanceof Text) {
-    label.set({ text: frame.name });
-  }
-
-  // Update dimensions
-  if (dimensions instanceof Text) {
-    dimensions.set({
-      text: `${frame.width} × ${frame.height}`,
-      left: label.width! + 8,
-    });
-  }
-
-  // Update position
+  // Update frame rectangle properties
   frameObject.set({
     left: frame.x,
     top: frame.y,
+    width: frame.width,
+    height: frame.height,
+    fill: frame.backgroundColor,
   });
 
   frameObject.setCoords();
+  return true;
 }
 
 export function getFrameFromCanvas(canvas: Canvas, frameId: string): FrameObject | null {

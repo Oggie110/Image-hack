@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Canvas, PencilBrush, EraserBrush, Line, Rect, Circle } from 'fabric';
+import { Canvas, PencilBrush, Line, Rect, Circle } from 'fabric';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { useFrameStore } from '@/stores/useFrameStore';
 import { useDrawingStore } from '@/stores/useDrawingStore';
@@ -30,7 +30,7 @@ export function InfiniteCanvas() {
     if (!canvasRef.current) return;
 
     const canvas = new Canvas(canvasRef.current, {
-      width: window.innerWidth - 320, // Account for right panel
+      width: window.innerWidth - 384, // Account for right panel (w-96)
       height: window.innerHeight - 56, // Account for toolbar
       backgroundColor: '#fafafa',
       selection: false, // Disable box selection for now
@@ -42,7 +42,7 @@ export function InfiniteCanvas() {
     // Handle window resize
     const handleResize = () => {
       canvas.setDimensions({
-        width: window.innerWidth - 320,
+        width: window.innerWidth - 384,
         height: window.innerHeight - 56,
       });
       canvas.renderAll();
@@ -133,19 +133,25 @@ export function InfiniteCanvas() {
 
         updateLayer(target.frameId, target.layerId, updates);
       } else if (target?.frameId) {
-        // Frame modified
-        const objects = target.getObjects();
-        const background = objects[0];
-
+        // Frame modified (frame is now a simple Rect, not a Group)
         const updates: any = {
           x: Math.round(target.left || 0),
           y: Math.round(target.top || 0),
         };
 
         // If scaled, update dimensions
-        if (background && (target.scaleX !== 1 || target.scaleY !== 1)) {
-          updates.width = Math.round(background.width * (target.scaleX || 1));
-          updates.height = Math.round(background.height * (target.scaleY || 1));
+        if (target.scaleX !== 1 || target.scaleY !== 1) {
+          updates.width = Math.round((target.width || 0) * (target.scaleX || 1));
+          updates.height = Math.round((target.height || 0) * (target.scaleY || 1));
+
+          // Reset scale to 1 after applying it to dimensions
+          target.set({
+            scaleX: 1,
+            scaleY: 1,
+            width: updates.width,
+            height: updates.height,
+          });
+          target.setCoords();
         }
 
         updateFrame(target.frameId, updates);
@@ -251,7 +257,20 @@ export function InfiniteCanvas() {
         // Update existing frame
         const frameObject = getFrameFromCanvas(canvas, frame.id);
         if (frameObject) {
-          updateFrameObject(frameObject, frame);
+          const updateSuccess = updateFrameObject(frameObject, frame);
+
+          // If update failed, recreate the frame
+          if (!updateSuccess) {
+            console.log('Recreating corrupted frame object for:', frame.name);
+            canvas.remove(frameObject);
+            const newFrameObject = createFrameObject(frame);
+            canvas.add(newFrameObject);
+
+            // Re-select if this was the selected frame
+            if (frame.id === selectedFrameId) {
+              canvas.setActiveObject(newFrameObject);
+            }
+          }
         }
       }
     });
@@ -342,6 +361,56 @@ export function InfiniteCanvas() {
     canvas.renderAll();
   }, [frames, selectedLayerIds]);
 
+  // Handle layer z-order when layers are reordered
+  useEffect(() => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+
+    // Update z-order for all layers based on their position in the frames array
+    frames.forEach((frame) => {
+      // Layers at the start of the array should be at the bottom (rendered first)
+      // Layers at the end should be on top (rendered last)
+      frame.layers.forEach((layer, index) => {
+        const layerObj = getLayerFromCanvas(canvas, layer.id);
+        if (layerObj) {
+          // Use the correct Fabric.js API methods
+          const allObjects = canvas.getObjects();
+          const currentIndex = allObjects.indexOf(layerObj);
+
+          if (currentIndex !== -1) {
+            // Calculate how many times to move
+            // We want index 0 to be at the bottom, and higher indices on top
+            const targetIndex = index;
+            const diff = targetIndex - currentIndex;
+
+            if (diff > 0) {
+              // Bring forward
+              for (let i = 0; i < diff; i++) {
+                canvas.bringObjectForward(layerObj);
+              }
+            } else if (diff < 0) {
+              // Send backward
+              for (let i = 0; i < Math.abs(diff); i++) {
+                canvas.sendObjectBackwards(layerObj);
+              }
+            }
+          }
+        }
+      });
+    });
+
+    // CRITICAL: Ensure all frames are below all layers
+    // Get all frame objects
+    const frameObjects = canvas.getObjects().filter((obj: any) => obj.frameId && !obj.layerId);
+
+    // Send each frame to the back
+    frameObjects.forEach((frameObj) => {
+      canvas.sendObjectToBack(frameObj);
+    });
+
+    canvas.renderAll();
+  }, [frames]);
+
   // Handle layer selection from store (e.g., clicking in layers panel)
   useEffect(() => {
     const canvas = fabricCanvasRef.current;
@@ -376,13 +445,27 @@ export function InfiniteCanvas() {
       brush.width = settings.strokeWidth;
       canvas.freeDrawingBrush = brush;
     } else if (currentTool === 'eraser') {
-      // Enable eraser mode
-      canvas.isDrawingMode = true;
+      // Enable eraser mode - click to delete objects
+      canvas.isDrawingMode = false;
       canvas.selection = false;
+      canvas.defaultCursor = 'crosshair';
+      canvas.hoverCursor = 'crosshair';
 
-      const eraser = new EraserBrush(canvas);
-      eraser.width = settings.strokeWidth * 2; // Make eraser a bit wider
-      canvas.freeDrawingBrush = eraser;
+      // Add click handler for eraser
+      const handleEraserClick = (e: any) => {
+        const target = e.target;
+        if (target && !target.frameId) {
+          // Only delete drawable objects, not frames
+          canvas.remove(target);
+          canvas.renderAll();
+        }
+      };
+
+      canvas.on('mouse:down', handleEraserClick);
+
+      return () => {
+        canvas.off('mouse:down', handleEraserClick);
+      };
     } else {
       // Other tools (line, rectangle, circle) - will be handled by mouse events
       canvas.isDrawingMode = false;
@@ -493,6 +576,25 @@ export function InfiniteCanvas() {
   return (
     <div className="flex-1 relative overflow-hidden bg-muted">
       <canvas ref={canvasRef} />
+
+      {/* Frame labels overlay */}
+      <div className="absolute inset-0 pointer-events-none">
+        {frames.map((frame) => (
+          <div
+            key={frame.id}
+            className="absolute text-sm font-medium"
+            style={{
+              left: `${frame.x}px`,
+              top: `${frame.y - 24}px`,
+            }}
+          >
+            <span className="text-blue-600">{frame.name}</span>
+            <span className="text-gray-500 ml-2 text-xs">
+              {frame.width} × {frame.height}
+            </span>
+          </div>
+        ))}
+      </div>
 
       {/* Drawing Toolbar */}
       <DrawingToolbar />
