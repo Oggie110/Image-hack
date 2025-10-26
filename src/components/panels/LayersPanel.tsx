@@ -12,6 +12,7 @@ import {
   LockOpen1Icon,
   MagicWandIcon,
   ImageIcon,
+  PlusIcon,
 } from '@radix-ui/react-icons';
 import { pickImageFile, loadImageFromFile, getImageDimensions } from '@/utils/imageHelpers';
 
@@ -19,12 +20,31 @@ export function LayersPanel() {
   const {
     selectedLayerIds,
     getSelectedFrame,
+    addLayer,
     deleteLayer,
     toggleLayerVisibility,
     toggleLayerLock,
     updateLayer,
     selectLayers,
   } = useFrameStore();
+
+  const handleCreateNewLayer = () => {
+    const selectedFrame = getSelectedFrame();
+    if (!selectedFrame) return;
+
+    // Create a blank layer with default size
+    const layerWidth = Math.min(400, selectedFrame.width * 0.6);
+    const layerHeight = Math.min(400, selectedFrame.height * 0.6);
+
+    addLayer(selectedFrame.id, {
+      name: `Layer ${selectedFrame.layers.length + 1}`,
+      type: 'image',
+      width: layerWidth,
+      height: layerHeight,
+      x: (selectedFrame.width - layerWidth) / 2,
+      y: (selectedFrame.height - layerHeight) / 2,
+    });
+  };
 
   const handleImportImage = async () => {
     const selectedFrame = getSelectedFrame();
@@ -78,8 +98,17 @@ export function LayersPanel() {
   return (
     <div className="flex flex-col h-full">
       {/* Layer controls */}
-      <div className="p-4 border-b">
+      <div className="p-4 border-b space-y-2">
         <div className="text-sm font-medium mb-2">Frame: {selectedFrame.name}</div>
+        <Button
+          variant="default"
+          size="sm"
+          className="w-full"
+          onClick={handleCreateNewLayer}
+        >
+          <PlusIcon className="mr-2" />
+          New Layer
+        </Button>
         <Button
           variant="outline"
           size="sm"

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Canvas, PencilBrush, Line, Rect, Circle } from 'fabric';
+import { Canvas, PencilBrush, EraserBrush, Line, Rect, Circle } from 'fabric';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { useFrameStore } from '@/stores/useFrameStore';
 import { useDrawingStore } from '@/stores/useDrawingStore';
@@ -79,6 +79,39 @@ export function InfiniteCanvas() {
 
     canvas.on('selection:cleared', () => {
       // Don't clear selection when clicking canvas - keep current selection
+    });
+
+    // Handle real-time frame movement - move layers with frame
+    canvas.on('object:moving', (e) => {
+      const target = e.target as any;
+
+      if (target?.frameId && !target.layerId) {
+        // Frame is being moved - update all its layers in real-time
+        const frame = getFrame(target.frameId);
+        if (!frame) return;
+
+        const deltaX = (target.left || 0) - frame.x;
+        const deltaY = (target.top || 0) - frame.y;
+
+        // Get all layer objects for this frame
+        const layerObjects = canvas.getObjects().filter((obj: any) =>
+          obj.frameId === target.frameId && obj.layerId
+        );
+
+        // Move each layer by the same delta
+        layerObjects.forEach((layerObj: any) => {
+          const layer = frame.layers.find(l => l.id === layerObj.layerId);
+          if (layer) {
+            layerObj.set({
+              left: frame.x + deltaX + layer.x,
+              top: frame.y + deltaY + layer.y,
+            });
+            layerObj.setCoords();
+          }
+        });
+
+        canvas.renderAll();
+      }
     });
 
     // Handle frame and layer modifications (drag, resize, rotate) - update position and size in store
@@ -342,6 +375,14 @@ export function InfiniteCanvas() {
       brush.color = settings.strokeColor;
       brush.width = settings.strokeWidth;
       canvas.freeDrawingBrush = brush;
+    } else if (currentTool === 'eraser') {
+      // Enable eraser mode
+      canvas.isDrawingMode = true;
+      canvas.selection = false;
+
+      const eraser = new EraserBrush(canvas);
+      eraser.width = settings.strokeWidth * 2; // Make eraser a bit wider
+      canvas.freeDrawingBrush = eraser;
     } else {
       // Other tools (line, rectangle, circle) - will be handled by mouse events
       canvas.isDrawingMode = false;

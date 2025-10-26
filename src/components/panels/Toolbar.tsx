@@ -10,14 +10,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { useFrameStore } from '@/stores/useFrameStore';
+import { useHistoryStore } from '@/stores/useHistoryStore';
 import { FRAME_PRESETS } from '@/types';
-import { PlusIcon, MagicWandIcon, GearIcon, DownloadIcon } from '@radix-ui/react-icons';
+import { PlusIcon, MagicWandIcon, GearIcon, DownloadIcon, CounterClockwiseClockIcon, ClockIcon } from '@radix-ui/react-icons';
 import { AIGenerateDialog } from '@/components/ai/AIGenerateDialog';
 import { ExportDialog } from '@/components/export/ExportDialog';
 
 export function Toolbar() {
   const { viewport, zoomIn, zoomOut, resetZoom, fabricCanvas } = useCanvasStore();
-  const { addFrame } = useFrameStore();
+  const { frames, addFrame, restoreFrames } = useFrameStore();
+  const { canUndo, canRedo, undo, redo } = useHistoryStore();
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
 
@@ -26,12 +28,48 @@ export function Toolbar() {
     addFrame(preset);
   };
 
+  const handleUndo = () => {
+    const previousState = undo(frames);
+    if (previousState) {
+      restoreFrames(previousState);
+    }
+  };
+
+  const handleRedo = () => {
+    const nextState = redo();
+    if (nextState) {
+      restoreFrames(nextState);
+    }
+  };
+
   const zoomPercent = Math.round(viewport.zoom * 100);
 
   return (
     <div className="h-14 border-b bg-background px-4 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <h1 className="text-lg font-semibold">Image Hack</h1>
+
+        {/* Undo/Redo */}
+        <div className="flex items-center gap-1 ml-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleUndo}
+            disabled={!canUndo()}
+            title="Undo (Cmd+Z)"
+          >
+            <CounterClockwiseClockIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRedo}
+            disabled={!canRedo()}
+            title="Redo (Cmd+Shift+Z)"
+          >
+            <ClockIcon />
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2">

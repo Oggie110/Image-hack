@@ -53,21 +53,36 @@ export async function exportFrame(
     const layerX = (layer.left || 0) - frame.x;
     const layerY = (layer.top || 0) - frame.y;
 
+    // Get layer dimensions with scale
+    const layerWidth = (layer.width || 0) * (layer.scaleX || 1);
+    const layerHeight = (layer.height || 0) * (layer.scaleY || 1);
+
     // Create image from layer
     const layerCanvas = layer.toCanvasElement({
       multiplier: scale,
     });
 
+    // Save context state
+    ctx.save();
+
+    // Apply transformations
+    ctx.translate((layerX + layerWidth / 2) * scale, (layerY + layerHeight / 2) * scale);
+    if (layer.angle) {
+      ctx.rotate((layer.angle * Math.PI) / 180);
+    }
+
     // Draw layer with opacity
     ctx.globalAlpha = layer.opacity || 1;
     ctx.drawImage(
       layerCanvas,
-      layerX * scale,
-      layerY * scale,
-      layerCanvas.width,
-      layerCanvas.height
+      (-layerWidth / 2) * scale,
+      (-layerHeight / 2) * scale,
+      layerWidth * scale,
+      layerHeight * scale
     );
-    ctx.globalAlpha = 1;
+
+    // Restore context state
+    ctx.restore();
   }
 
   // Convert to blob
