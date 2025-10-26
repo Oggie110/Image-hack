@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,11 +12,12 @@ import { useCanvasStore } from '@/stores/useCanvasStore';
 import { useFrameStore } from '@/stores/useFrameStore';
 import { FRAME_PRESETS } from '@/types';
 import { PlusIcon, MagicWandIcon, GearIcon } from '@radix-ui/react-icons';
+import { AIGenerateDialog } from '@/components/ai/AIGenerateDialog';
 
 export function Toolbar() {
   const { viewport, zoomIn, zoomOut, resetZoom } = useCanvasStore();
   const { addFrame } = useFrameStore();
-  // const [showAIDialog, setShowAIDialog] = useState(false); // Will be used for AI dialog
+  const [showAIDialog, setShowAIDialog] = useState(false);
 
   const handleAddFrame = (presetName?: string) => {
     const preset = FRAME_PRESETS.find((p) => p.name === presetName);
@@ -71,7 +73,7 @@ export function Toolbar() {
         </DropdownMenu>
 
         {/* AI Generation */}
-        <Button variant="default" size="sm" onClick={() => console.log('AI Generate - Coming soon')}>
+        <Button variant="default" size="sm" onClick={() => setShowAIDialog(true)}>
           <MagicWandIcon className="mr-2" />
           AI Generate
         </Button>
@@ -118,6 +120,9 @@ export function Toolbar() {
           <GearIcon />
         </Button>
       </div>
+
+      {/* AI Generation Dialog */}
+      <AIGenerateDialog open={showAIDialog} onOpenChange={setShowAIDialog} />
     </div>
   );
 }
