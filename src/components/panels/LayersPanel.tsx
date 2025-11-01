@@ -14,6 +14,8 @@ import {
   MagicWandIcon,
   ImageIcon,
   PlusIcon,
+  GroupIcon,
+  UngroupIcon,
 } from '@radix-ui/react-icons';
 import { pickImageFile, loadImageFromFile, getImageDimensions } from '@/utils/imageHelpers';
 
@@ -28,6 +30,9 @@ export function LayersPanel() {
     updateLayer,
     selectLayers,
     reorderLayers,
+    groupLayers,
+    ungroupLayers,
+    getLayer,
   } = useFrameStore();
 
   const [draggedLayerId, setDraggedLayerId] = useState<string | null>(null);
@@ -85,6 +90,31 @@ export function LayersPanel() {
       });
     } catch (error) {
       console.error('Failed to import image:', error);
+    }
+  };
+
+  const handleGroupLayers = () => {
+    const selectedFrame = getSelectedFrame();
+    if (!selectedFrame || selectedLayerIds.length < 2) return;
+
+    try {
+      groupLayers(selectedFrame.id, selectedLayerIds);
+    } catch (error) {
+      console.error('Failed to group layers:', error);
+    }
+  };
+
+  const handleUngroupLayers = () => {
+    const selectedFrame = getSelectedFrame();
+    if (!selectedFrame || selectedLayerIds.length !== 1) return;
+
+    const layer = getLayer(selectedFrame.id, selectedLayerIds[0]);
+    if (!layer || layer.type !== 'group') return;
+
+    try {
+      ungroupLayers(selectedFrame.id, layer.id);
+    } catch (error) {
+      console.error('Failed to ungroup layers:', error);
     }
   };
 
@@ -153,7 +183,13 @@ export function LayersPanel() {
     <div className="flex flex-col h-full">
       {/* Layer controls */}
       <div className="p-4 border-b space-y-2">
-        <div className="text-sm font-medium mb-2">Frame: {selectedFrame.name}</div>
+        <div className="mb-2">
+          <div className="text-xs text-muted-foreground mb-1">Active Frame</div>
+          <div className="text-sm font-semibold text-primary">{selectedFrame.name}</div>
+          <div className="text-xs text-muted-foreground">
+            {selectedFrame.width} × {selectedFrame.height} • {selectedFrame.layers.length} layer{selectedFrame.layers.length !== 1 ? 's' : ''}
+          </div>
+        </div>
         <Button
           variant="default"
           size="sm"
@@ -172,6 +208,42 @@ export function LayersPanel() {
           <ImageIcon className="mr-2" />
           Import Image
         </Button>
+
+        {/* Group/Ungroup Controls */}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={handleGroupLayers}
+            disabled={selectedLayerIds.length < 2}
+            title={selectedLayerIds.length < 2 ? 'Select at least 2 layers to group' : 'Group selected layers'}
+          >
+            <GroupIcon className="mr-2" />
+            Group
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={handleUngroupLayers}
+            disabled={
+              selectedLayerIds.length !== 1 ||
+              !getLayer(selectedFrame.id, selectedLayerIds[0]) ||
+              getLayer(selectedFrame.id, selectedLayerIds[0])?.type !== 'group'
+            }
+            title={
+              selectedLayerIds.length !== 1
+                ? 'Select a single group to ungroup'
+                : getLayer(selectedFrame.id, selectedLayerIds[0])?.type !== 'group'
+                ? 'Selected layer is not a group'
+                : 'Ungroup selected group'
+            }
+          >
+            <UngroupIcon className="mr-2" />
+            Ungroup
+          </Button>
+        </div>
       </div>
 
       {/* Layers list */}

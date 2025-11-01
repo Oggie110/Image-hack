@@ -18,10 +18,12 @@ import { ExportDialog } from '@/components/export/ExportDialog';
 
 export function Toolbar() {
   const { viewport, zoomIn, zoomOut, resetZoom, fabricCanvas } = useCanvasStore();
-  const { frames, addFrame, restoreFrames } = useFrameStore();
+  const { frames, addFrame, restoreFrames, getActiveFrame } = useFrameStore();
   const { canUndo, canRedo, undo, redo } = useHistoryStore();
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  
+  const activeFrame = getActiveFrame();
 
   const handleAddFrame = (presetName?: string) => {
     const preset = FRAME_PRESETS.find((p) => p.name === presetName);
@@ -73,6 +75,13 @@ export function Toolbar() {
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Active Frame Indicator */}
+        {activeFrame && (
+          <div className="px-3 py-1.5 rounded-md bg-accent text-sm font-medium border">
+            {activeFrame.name}
+          </div>
+        )}
+        
         {/* Frame Creation */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -113,13 +122,25 @@ export function Toolbar() {
         </DropdownMenu>
 
         {/* AI Generation */}
-        <Button variant="default" size="sm" onClick={() => setShowAIDialog(true)}>
+        <Button 
+          variant="default" 
+          size="sm" 
+          onClick={() => setShowAIDialog(true)}
+          disabled={!activeFrame}
+          title={!activeFrame ? 'Please select a frame first' : ''}
+        >
           <MagicWandIcon className="mr-2" />
           AI Generate
         </Button>
 
         {/* Export */}
-        <Button variant="outline" size="sm" onClick={() => setShowExportDialog(true)}>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setShowExportDialog(true)}
+          disabled={!activeFrame || frames.length === 0}
+          title={!activeFrame ? 'Please select a frame first' : frames.length === 0 ? 'No frames to export' : ''}
+        >
           <DownloadIcon className="mr-2" />
           Export
         </Button>

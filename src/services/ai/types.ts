@@ -1,3 +1,9 @@
+export interface GenerationProgress {
+  attempt: number;
+  maxAttempts: number;
+  message?: string;
+}
+
 export interface GenerationParams {
   prompt: string;
   negativePrompt?: string;
@@ -7,6 +13,8 @@ export interface GenerationParams {
   guidanceScale?: number;
   seed?: number;
   model?: string;
+  onProgress?: (progress: GenerationProgress) => void;
+  cancelSignal?: { cancelled: boolean };
 }
 
 export interface GenerationResult {

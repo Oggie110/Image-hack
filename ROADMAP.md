@@ -1,6 +1,6 @@
 # Image Hack Roadmap
 
-## ✅ Completed (MVP v0.1)
+## ✅ Completed (v0.1 - MVP Foundation)
 
 ### Core Foundation
 - [x] React + TypeScript + Vite setup
@@ -36,35 +36,66 @@
 - [x] AI metadata storage
 - [x] Provider switching system
 
-## 🚀 Next Steps (v0.2)
+## ✅ Completed (v0.2 - v0.3 - Core Features)
 
 ### Export Functionality
-- [ ] Export single frame as PNG/JPG/WEBP
-- [ ] Multi-frame export (ZIP)
-- [ ] Export with different scales (1x, 2x, 3x)
-- [ ] Export settings per frame
-- [ ] Flatten layers option
+- [x] Export single frame as PNG/JPG/WEBP
+- [x] Multi-frame export (ZIP)
+- [x] Export with different scales (1x, 2x, 3x)
+- [x] Export settings per frame
+- [x] Flatten layers option
 
 ### User Experience
-- [ ] Keyboard shortcuts
-  - [ ] Delete - Remove selected layer/frame
-  - [ ] Ctrl+Z - Undo
-  - [ ] Ctrl+Y - Redo
-  - [ ] Ctrl+D - Duplicate
-  - [ ] F - Zoom to fit
-- [ ] Undo/redo system
-- [ ] Auto-save to localStorage
-- [ ] Layer thumbnails in panel
-- [ ] Frame thumbnails in panel
+- [x] Keyboard shortcuts
+  - [x] Delete - Remove selected layer/frame
+  - [x] Ctrl+Z - Undo
+  - [x] Ctrl+Y - Redo
+  - [x] Ctrl+D - Duplicate
+  - [x] F - Zoom to fit
+  - [x] Many more shortcuts
+- [x] Undo/redo system
+- [x] Auto-save to localStorage
+- [x] Layer thumbnails in panel
+- [x] Frame thumbnails in panel
+- [x] Real-time z-order enforcement for layers
+
+### Wireframe/Sketching Tools
+- [x] Built-in drawing tool for sketching
+- [x] Simple drawing tools (pen, line, rectangle, circle)
+- [x] Sketch directly on canvas
+- [x] Drawing layer support
 
 ### AI Enhancements
-- [ ] **Wireframe/Sketch to Image** ⭐ NEW
-  - [ ] Built-in drawing tool for sketching
-  - [ ] Convert sketches to wireframes
-  - [ ] Use sketch + prompt for AI generation
-  - [ ] Sketch layer type
-  - [ ] Simple drawing tools (pen, line, rectangle, circle)
-  - [ ] Sketch-to-image AI model integration
+- [x] AI generation modes for specialized use cases
+- [x] Enhanced prompt system
+
+## ✅ Completed (v0.4 - UX & Layer Management)
+
+### Layer Management Improvements
+- [x] Tree-based layer panel with expandable frames
+- [x] Drag-and-drop layer reordering within frames
+- [x] Visual borders around layers in tree
+- [x] Always-visible layer action buttons (no hover required)
+- [x] Auto-expand newly created/duplicated frames
+
+### Drawing Tools Enhancements
+- [x] Eraser tool with custom circular cursor
+- [x] Custom eraser size setting (default 15px)
+- [x] Tool-specific cursor feedback for all drawing tools
+- [x] Fixed object selectability during drawing (CRITICAL FIX)
+- [x] Objects only movable with select tool, not during drawing
+- [x] Triple-layer protection against accidental object movement
+
+### User Experience Improvements
+- [x] Auto-switch to select tool after AI generation
+- [x] First frame auto-centered on canvas
+- [x] Frame positioning improvements
+- [x] Enhanced visual feedback throughout UI
+
+## 🚀 Next Steps (v0.5)
+
+### AI Enhancements
+- [ ] **Sketch-to-image AI model integration** - Use sketches as guides for AI generation (ControlNet)
 - [ ] AI image-to-image editing
 - [ ] AI inpainting (edit parts of images)
 - [ ] AI background removal
@@ -73,15 +104,18 @@
 - [ ] Prompt history and favorites
 - [ ] Model selection in UI
 
-## 📋 Future Features (v0.3+)
+### Advanced Editing
+- [ ] Text layers
+- [ ] Filters (blur, brightness, contrast, saturation)
+- [ ] Layer effects (drop shadow, glow, stroke)
+- [ ] Blend modes for all layers
+
+## 📋 Future Features (v0.5+)
 
 ### Advanced Editing
 - [ ] Text layers with AI text generation
 - [ ] Shape layers (rectangle, circle, polygon)
-- [ ] Drawing/brush tools
-- [ ] Filters (blur, brightness, contrast, saturation)
-- [ ] Layer effects (drop shadow, glow, stroke)
-- [ ] Blend modes for all layers
+- [ ] Advanced drawing/brush tools
 - [ ] Layer masks
 - [ ] Adjustment layers
 
@@ -152,52 +186,63 @@
 - [ ] Notion integration
 - [ ] GitHub integration for design reviews
 
-## 🎯 Prioritization
+## 🎯 Current Priorities
 
-### High Priority (Next 2-4 weeks)
-1. Export functionality
-2. Wireframe/sketching tools
-3. Keyboard shortcuts
-4. Undo/redo
-5. Layer thumbnails
+### High Priority (v0.4 - Next 2-4 weeks)
+1. Sketch-to-image AI integration (ControlNet)
+2. AI image-to-image editing
+3. AI inpainting and background removal
+4. Text layers
+5. Model selection in UI
 
-### Medium Priority (1-2 months)
-1. Advanced AI features (image-to-image, inpainting)
-2. Cloud save
-3. More AI providers
-4. Drawing tools
-5. Text layers
+### Medium Priority (v0.5 - 1-2 months)
+1. Advanced filters and effects
+2. Cloud save/sync
+3. More AI providers (OpenAI DALL-E, Replicate)
+4. Layer masks
+5. Blend modes
 
 ### Low Priority (Future)
 1. Collaboration features
-2. Animation
+2. Animation/prototyping
 3. Mobile apps
 4. Plugin system
+5. Desktop app (Electron/Tauri)
 
 ## 📝 Notes
 
-### Wireframe/Sketching Feature Details
+### Current Development Status (v0.4)
 
-The wireframe/sketching feature will enable users to:
+**Completed in this version:**
+- ✅ Tree-based layer panel with drag-and-drop reordering
+- ✅ Enhanced drawing tools with custom cursors
+- ✅ CRITICAL FIX: Objects no longer movable during drawing operations
+- ✅ Auto-switch to select tool after AI generation
+- ✅ First frame auto-centered on canvas
+- ✅ Always-visible layer actions for better UX
+- ✅ Auto-expand new frames in tree view
 
-1. **Sketch directly on canvas** - Use simple drawing tools to create rough wireframes
-2. **Convert to AI images** - Use the sketch as a guide for AI generation
-3. **Hybrid workflow** - Combine sketching with prompt-based generation
-4. **Sketch layers** - Treat sketches as a special layer type
-5. **ControlNet integration** - Use advanced AI models that understand sketches
+**Next up for v0.5:**
+- 🎯 ControlNet/Sketch-to-image AI integration
+- 🎯 AI image-to-image editing capabilities
+- 🎯 Enhanced AI features (inpainting, background removal)
+- 🎯 Text layers with AI assistance
 
-**Implementation approach:**
-- Add drawing tools (pen, line, shapes) to toolbar
-- Create sketch layer type that stores vector paths
-- Integrate with ControlNet-compatible AI models
-- Allow sketch + text prompt combined generation
-- Option to hide/show sketch layer after generation
+### Sketch-to-Image AI Integration (v0.5 Focus)
+
+The next major feature will enhance the existing drawing tools with AI:
+
+**Planned capabilities:**
+1. **ControlNet integration** - Use sketches as precise guides for AI generation
+2. **Sketch + prompt workflow** - Combine hand-drawn wireframes with text prompts
+3. **Multiple sketch modes** - Canny edge, depth, pose, scribble
+4. **Preview before generate** - See how sketch influences AI output
 
 **Use cases:**
-- Quick wireframe mockups → high-fidelity designs
-- Rough composition sketches → polished images
-- Logo concepts → final logos
-- UI layouts → realistic mockups
+- Wireframe mockups → High-fidelity designs
+- Rough sketches → Polished illustrations
+- Logo concepts → Final logos
+- UI layouts → Realistic mockups
 
 ---
 

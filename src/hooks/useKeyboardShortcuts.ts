@@ -4,7 +4,7 @@ import { useDrawingStore } from '@/stores/useDrawingStore';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 
 export function useKeyboardShortcuts() {
-  const { selectedFrameId, selectedLayerIds, deleteLayer, deleteFrame, undo, redo, canUndo, canRedo } = useFrameStore();
+  const { selectedFrameId, selectedLayerIds, deleteLayer, undo, redo, canUndo, canRedo } = useFrameStore();
   const { setTool } = useDrawingStore();
   const { zoomIn, zoomOut, resetZoom } = useCanvasStore();
 
@@ -21,16 +21,16 @@ export function useKeyboardShortcuts() {
       const ctrl = e.ctrlKey || e.metaKey; // Support both Ctrl and Cmd
       const shift = e.shiftKey;
 
-      // Delete key - delete selected layer or frame
+      // Delete key - delete selected layer (never auto-delete frame)
+      // Only delete layers when explicitly selected, frames should be deleted via the frames panel
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
         if (selectedLayerIds.length > 0 && selectedFrameId) {
           selectedLayerIds.forEach((layerId) => {
             deleteLayer(selectedFrameId, layerId);
           });
-        } else if (selectedFrameId) {
-          deleteFrame(selectedFrameId);
         }
+        // Removed auto-delete frame behavior - frames should be deleted explicitly from FramesPanel
       }
 
       // Escape key - switch to select tool
@@ -107,7 +107,6 @@ export function useKeyboardShortcuts() {
     selectedFrameId,
     selectedLayerIds,
     deleteLayer,
-    deleteFrame,
     undo,
     redo,
     canUndo,

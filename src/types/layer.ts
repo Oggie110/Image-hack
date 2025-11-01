@@ -1,4 +1,4 @@
-export type LayerType = 'image' | 'ai-generated' | 'shape' | 'text' | 'sketch';
+export type LayerType = 'image' | 'ai-generated' | 'shape' | 'text' | 'sketch' | 'group';
 
 export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten';
 
@@ -19,6 +19,7 @@ export interface SketchMetadata {
   strokeWidth: number;
   fill?: string;
   pathData?: string; // SVG path data for vector sketches
+  fabricObjectData?: string; // Serialized Fabric.js object JSON
   createdAt: string;
 }
 
@@ -42,6 +43,9 @@ export interface Layer {
 
   // Sketch metadata (only for sketch layers)
   sketchMetadata?: SketchMetadata;
+
+  // Group children (only for group layers)
+  children?: Layer[];
 
   // Position and size within frame
   x: number;

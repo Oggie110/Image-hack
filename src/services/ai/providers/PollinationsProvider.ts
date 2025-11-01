@@ -30,37 +30,159 @@ export class PollinationsProvider implements AIProvider {
 
     const imageUrl = url.toString();
 
-    // Verify the image loads
-    try {
-      await this.verifyImageLoads(imageUrl);
-    } catch (error) {
-      throw new Error('Failed to generate image with Pollinations.ai');
+    // Retry logic with exponential backoff
+    const maxRetries = 5;
+    const initialTimeout = 35000; // Start with 35 seconds
+    let lastError: Error | null = null;
+    const cancelSignal = params.cancelSignal || { cancelled: false };
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      // Check for cancellation
+      if (cancelSignal.cancelled) {
+        throw new Error('Generation cancelled by user');
+      }
+
+      // Report progress
+      if (params.onProgress) {
+        params.onProgress({
+          attempt: attempt + 1,
+          maxAttempts: maxRetries,
+          message: attempt === 0 ? 'Generating image...' : `Retrying... (Attempt ${attempt + 1}/${maxRetries})`,
+        });
+      }
+
+      try {
+        // Increase timeout slightly with each attempt (up to 50s)
+        const timeout = Math.min(initialTimeout + attempt * 5000, 50000);
+        await this.verifyImageLoads(imageUrl, timeout, cancelSignal);
+
+        // Success!
+        const generationTime = Date.now() - startTime;
+
+        if (attempt > 0) {
+          console.log(`Generation succeeded on attempt ${attempt + 1} after ${generationTime}ms`);
+        }
+
+        return {
+          imageUrl,
+          metadata: {
+            provider: 'pollinations',
+            model: model,
+            seed: seed,
+            cost: 0,
+            generationTime,
+            timestamp: new Date().toISOString(),
+          },
+        };
+      } catch (error) {
+        lastError = error as Error;
+        const isLastAttempt = attempt === maxRetries - 1;
+
+        if (isLastAttempt) {
+          // Log detailed error on final failure
+          console.error(
+            `Pollinations.ai generation failed after ${maxRetries} attempts:`,
+            lastError.message
+          );
+          throw new Error(
+            `Failed to generate image after ${maxRetries} attempts. ${lastError.message}`
+          );
+        }
+
+        // Exponential backoff: wait 1s, 2s, 4s, 8s between retries
+        const backoffDelay = Math.min(1000 * Math.pow(2, attempt), 8000);
+        console.warn(
+          `Generation attempt ${attempt + 1} failed (${lastError.message}). Retrying in ${backoffDelay}ms...`
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+      }
     }
 
-    const generationTime = Date.now() - startTime;
-
-    return {
-      imageUrl,
-      metadata: {
-        provider: 'pollinations',
-        model: model,
-        seed: seed,
-        cost: 0,
-        generationTime,
-        timestamp: new Date().toISOString(),
-      },
-    };
+    // Should never reach here, but TypeScript needs it
+    throw lastError || new Error('Failed to generate image with Pollinations.ai');
   }
 
-  private async verifyImageLoads(url: string): Promise<void> {
+  private async verifyImageLoads(url: string, timeoutMs: number = 35000, cancelSignal?: { cancelled: boolean }): Promise<void> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error('Image failed to load'));
-      img.src = url;
+      let timeoutId: ReturnType<typeof setTimeout>;
+      let resolved = false;
 
-      // Timeout after 30 seconds
-      setTimeout(() => reject(new Error('Image loading timeout')), 30000);
+      const cleanup = () => {
+        resolved = true;
+        img.onload = null;
+        img.onerror = null;
+        if (timeoutId) clearTimeout(timeoutId);
+      };
+
+      img.onload = () => {
+        if (!resolved) {
+          // Check for cancellation before resolving
+          if (cancelSignal?.cancelled) {
+            cleanup();
+            reject(new Error('Generation cancelled by user'));
+            return;
+          }
+
+          // Verify image actually loaded (has dimensions)
+          if (img.width > 0 && img.height > 0) {
+            cleanup();
+            resolve();
+          } else {
+            cleanup();
+            reject(new Error('Image loaded but has invalid dimensions (0x0)'));
+          }
+        }
+      };
+
+      img.onerror = (event) => {
+        if (!resolved) {
+          cleanup();
+          
+          // Better error detection
+          // Check if it's a network/CORS issue vs server error
+          let errorType = 'UNKNOWN';
+          let errorMsg = 'Image failed to load from Pollinations.ai';
+          
+          try {
+            // Try to fetch the URL to get more info
+            // This will help distinguish network errors
+            fetch(url, { method: 'HEAD', mode: 'no-cors' }).catch(() => {
+              // If we can't even fetch, it's likely a network/CORS issue
+              errorType = 'NETWORK';
+              errorMsg = 'Network error: Unable to reach Pollinations.ai (check your connection or CORS settings)';
+            });
+          } catch {
+            errorType = 'NETWORK';
+            errorMsg = 'Network error: Unable to reach Pollinations.ai';
+          }
+          
+          // If we got here from img.onerror, it's likely a server response issue
+          if (errorType === 'UNKNOWN') {
+            errorType = 'SERVER_ERROR';
+            errorMsg = 'Server error: Pollinations.ai returned an invalid image response. The server may be overloaded.';
+          }
+          
+          reject(new Error(errorMsg));
+        }
+      };
+
+      // Set timeout
+      timeoutId = setTimeout(() => {
+        if (!resolved) {
+          cleanup();
+          // Check for cancellation
+          if (cancelSignal?.cancelled) {
+            reject(new Error('Generation cancelled by user'));
+          } else {
+            reject(new Error(`Timeout: Image generation took longer than ${Math.round(timeoutMs / 1000)} seconds. The server may be slow or overloaded.`));
+          }
+        }
+      }, timeoutMs);
+
+      // Start loading
+      img.src = url;
     });
   }
 

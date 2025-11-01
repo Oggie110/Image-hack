@@ -17,16 +17,22 @@ interface AIStore {
   progress: number; // 0-100
   error: string | null;
   lastGeneratedImageUrl: string | null;
+  generationAttempt: number; // Current attempt number (1-based)
+  maxAttempts: number;
+  canCancel: boolean;
+  cancelGeneration: (() => void) | null;
 
   // Settings
   settings: AIGenerationSettings;
 
   // Actions
   updateSettings: (updates: Partial<AIGenerationSettings>) => void;
-  setGenerating: (isGenerating: boolean) => void;
+  setGenerating: (isGenerating: boolean, cancelFn?: (() => void) | null) => void;
   setProgress: (progress: number) => void;
   setError: (error: string | null) => void;
   setLastGeneratedImage: (url: string | null) => void;
+  setGenerationAttempt: (attempt: number, maxAttempts: number) => void;
+  cancel: () => void;
   resetSettings: () => void;
 }
 
@@ -40,11 +46,15 @@ const defaultSettings: AIGenerationSettings = {
   guidanceScale: 7.5,
 };
 
-export const useAIStore = create<AIStore>((set) => ({
+export const useAIStore = create<AIStore>((set, get) => ({
   isGenerating: false,
   progress: 0,
   error: null,
   lastGeneratedImageUrl: null,
+  generationAttempt: 0,
+  maxAttempts: 5,
+  canCancel: false,
+  cancelGeneration: null,
 
   settings: { ...defaultSettings },
 
@@ -54,8 +64,15 @@ export const useAIStore = create<AIStore>((set) => ({
     }));
   },
 
-  setGenerating: (isGenerating) => {
-    set({ isGenerating, progress: isGenerating ? 0 : 100, error: null });
+  setGenerating: (isGenerating, cancelFn = null) => {
+    set({ 
+      isGenerating, 
+      progress: isGenerating ? 0 : 100, 
+      error: null,
+      generationAttempt: isGenerating ? 0 : get().generationAttempt,
+      canCancel: isGenerating && cancelFn !== null,
+      cancelGeneration: cancelFn,
+    });
   },
 
   setProgress: (progress) => {
@@ -63,11 +80,33 @@ export const useAIStore = create<AIStore>((set) => ({
   },
 
   setError: (error) => {
-    set({ error, isGenerating: false });
+    set({ 
+      error, 
+      isGenerating: false,
+      canCancel: false,
+      cancelGeneration: null,
+    });
   },
 
   setLastGeneratedImage: (url) => {
     set({ lastGeneratedImageUrl: url });
+  },
+
+  setGenerationAttempt: (attempt, maxAttempts) => {
+    set({ generationAttempt: attempt, maxAttempts });
+  },
+
+  cancel: () => {
+    const { cancelGeneration } = get();
+    if (cancelGeneration) {
+      cancelGeneration();
+      set({ 
+        isGenerating: false, 
+        canCancel: false, 
+        cancelGeneration: null,
+        error: 'Generation cancelled',
+      });
+    }
   },
 
   resetSettings: () => {

@@ -7,6 +7,7 @@ interface DrawingSettings {
   strokeWidth: number;
   fill: string | null;
   opacity: number; // 0 to 100
+  eraserSize: number; // Size of the eraser in pixels
 }
 
 interface DrawingStore {
@@ -25,6 +26,7 @@ interface DrawingStore {
   setStrokeWidth: (width: number) => void;
   setFill: (fill: string | null) => void;
   setOpacity: (opacity: number) => void;
+  setEraserSize: (size: number) => void;
 }
 
 export const useDrawingStore = create<DrawingStore>((set) => ({
@@ -35,6 +37,7 @@ export const useDrawingStore = create<DrawingStore>((set) => ({
     strokeWidth: 2,
     fill: null,
     opacity: 100,
+    eraserSize: 15,
   },
 
   setTool: (tool) => set({ currentTool: tool }),
@@ -64,5 +67,10 @@ export const useDrawingStore = create<DrawingStore>((set) => ({
   setOpacity: (opacity) =>
     set((state) => ({
       settings: { ...state.settings, opacity },
+    })),
+
+  setEraserSize: (size) =>
+    set((state) => ({
+      settings: { ...state.settings, eraserSize: size },
     })),
 }));

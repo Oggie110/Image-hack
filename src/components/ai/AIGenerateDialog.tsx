@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { useAIStore } from '@/stores/useAIStore';
 import { useFrameStore } from '@/stores/useFrameStore';
+import { useDrawingStore } from '@/stores/useDrawingStore';
 import { aiService } from '@/services/ai/AIService';
 import {
   GENERATION_MODES,
@@ -36,13 +37,28 @@ interface AIGenerateDialogProps {
 }
 
 export function AIGenerateDialog({ open, onOpenChange }: AIGenerateDialogProps) {
-  const { settings, updateSettings, isGenerating, setGenerating, setError, error } = useAIStore();
-  const { getSelectedFrame, addLayer } = useFrameStore();
+  const { 
+    settings, 
+    updateSettings, 
+    isGenerating, 
+    setGenerating, 
+    setError, 
+    error,
+    generationAttempt,
+    maxAttempts,
+    canCancel,
+    cancel,
+    setGenerationAttempt,
+  } = useAIStore();
+  const { getSelectedFrame, addLayer, getActiveFrame, ensureActiveFrame } = useFrameStore();
+  const { setTool } = useDrawingStore();
   const [localPrompt, setLocalPrompt] = useState(settings.prompt);
   const [localNegativePrompt, setLocalNegativePrompt] = useState(settings.negativePrompt);
   const [selectedMode, setSelectedMode] = useState<GenerationMode>(GENERATION_MODES[6]); // Default to 'custom'
+  const [cancelSignal, setCancelSignal] = useState<{ cancelled: boolean } | null>(null);
 
-  const selectedFrame = getSelectedFrame();
+  // Use active frame from context system
+  const selectedFrame = getActiveFrame();
   const providers = aiService.getAvailableProviders();
   const currentProvider = providers.find((p) => p.current);
   const models = aiService.getSupportedModels();
@@ -59,19 +75,47 @@ export function AIGenerateDialog({ open, onOpenChange }: AIGenerateDialogProps) 
     }
   }, [selectedMode]);
 
+  // Cleanup on dialog close
+  useEffect(() => {
+    if (!open) {
+      // Reset error and cancel signal when dialog closes
+      setError(null);
+      // Cancel generation if still in progress
+      if (isGenerating) {
+        cancel();
+      }
+      setCancelSignal(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   const handleGenerate = async () => {
     if (!localPrompt.trim()) {
       setError('Please enter a prompt');
       return;
     }
 
-    if (!selectedFrame) {
-      setError('Please select a frame first');
+    // Validate active frame using context system
+    let activeFrame: ReturnType<typeof ensureActiveFrame>;
+    try {
+      activeFrame = ensureActiveFrame();
+    } catch (err: any) {
+      setError(err.message || 'Please select a frame first');
       return;
     }
 
     setError(null);
-    setGenerating(true);
+    
+    // Create cancel signal
+    const signal = { cancelled: false };
+    setCancelSignal(signal);
+    
+    // Set up cancel function
+    const cancelFn = () => {
+      signal.cancelled = true;
+    };
+    
+    setGenerating(true, cancelFn);
 
     try {
       // Update settings
@@ -84,7 +128,7 @@ export function AIGenerateDialog({ open, onOpenChange }: AIGenerateDialogProps) 
       const finalPrompt = applyModeToPrompt(selectedMode, localPrompt);
       const finalNegativePrompt = getModeNegativePrompt(selectedMode, localNegativePrompt);
 
-      // Generate image
+      // Generate image with progress tracking
       const result = await aiService.generateImage({
         prompt: finalPrompt,
         negativePrompt: finalNegativePrompt,
@@ -94,17 +138,21 @@ export function AIGenerateDialog({ open, onOpenChange }: AIGenerateDialogProps) 
         guidanceScale: settings.guidanceScale,
         seed: settings.seed,
         model: settings.model,
+        onProgress: (progress) => {
+          setGenerationAttempt(progress.attempt, progress.maxAttempts);
+        },
+        cancelSignal: signal,
       });
 
-      // Add as layer to selected frame
-      addLayer(selectedFrame.id, {
+      // Add as layer to active frame (ensured to exist)
+      addLayer(activeFrame.id, {
         name: `AI: ${localPrompt.slice(0, 30)}...`,
         type: 'ai-generated',
         imageUrl: result.imageUrl,
         width: settings.width,
         height: settings.height,
-        x: (selectedFrame.width - settings.width) / 2,
-        y: (selectedFrame.height - settings.height) / 2,
+        x: (activeFrame.width - settings.width) / 2,
+        y: (activeFrame.height - settings.height) / 2,
         aiMetadata: {
           prompt: localPrompt,
           negativePrompt: localNegativePrompt,
@@ -118,13 +166,32 @@ export function AIGenerateDialog({ open, onOpenChange }: AIGenerateDialogProps) 
         },
       });
 
-      // Close dialog on success
+      // Close dialog on success and switch to select tool
+      setCancelSignal(null);
+      setTool('select');
       onOpenChange(false);
     } catch (err: any) {
-      setError(err.message || 'Failed to generate image');
+      setCancelSignal(null);
+      // Don't show error if it was cancelled
+      if (err.message !== 'Generation cancelled by user') {
+        setError(err.message || 'Failed to generate image');
+      } else {
+        setError(null);
+      }
     } finally {
-      setGenerating(false);
+      setGenerating(false, null);
     }
+  };
+
+  const handleRetry = () => {
+    // Generate new seed for retry
+    updateSettings({ seed: undefined });
+    setError(null);
+    handleGenerate();
+  };
+
+  const handleCancel = () => {
+    cancel();
   };
 
   return (
@@ -146,7 +213,11 @@ export function AIGenerateDialog({ open, onOpenChange }: AIGenerateDialogProps) 
             <div className="font-medium">Current Provider: {currentProvider?.displayName}</div>
             <div className="text-muted-foreground text-xs">
               {currentProvider?.type === 'free' ? '✓ Free' : '💰 Paid'} •
-              {selectedFrame ? ` Adding to: ${selectedFrame.name}` : ' No frame selected'}
+              {selectedFrame ? (
+                ` Adding to: ${selectedFrame.name}`
+              ) : (
+                <span className="text-destructive"> No frame selected - Select a frame first</span>
+              )}
             </div>
           </div>
 
@@ -351,23 +422,58 @@ export function AIGenerateDialog({ open, onOpenChange }: AIGenerateDialogProps) 
             </div>
           </details>
 
+          {/* Generation Progress */}
+          {isGenerating && (
+            <div className="rounded-lg bg-muted p-3 text-sm">
+              <div className="font-medium mb-1">
+                {generationAttempt > 0 
+                  ? `Generating... (Attempt ${generationAttempt}/${maxAttempts})`
+                  : 'Generating image...'}
+              </div>
+              <div className="text-muted-foreground text-xs">
+                This may take 30-60 seconds. Please wait...
+              </div>
+            </div>
+          )}
+
           {/* Error Display */}
-          {error && (
-            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
+          {error && !isGenerating && (
+            <div className="rounded-lg bg-destructive/10 p-3 text-sm">
+              <div className="text-destructive font-medium mb-2">{error}</div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetry}
+                className="w-full"
+              >
+                <SparklesIcon className="mr-2 h-3 w-3" />
+                Retry Generation
+              </Button>
             </div>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating}>
-            Cancel
-          </Button>
-          <Button onClick={handleGenerate} disabled={isGenerating || !selectedFrame}>
+          {isGenerating && canCancel ? (
+            <Button variant="destructive" onClick={handleCancel}>
+              Cancel Generation
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating}>
+              Cancel
+            </Button>
+          )}
+          <Button 
+            onClick={handleGenerate} 
+            disabled={isGenerating || !selectedFrame} 
+            title={!selectedFrame ? 'Please select a frame first' : ''}
+          >
             {isGenerating ? (
               <>
                 <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
+                {generationAttempt > 0 
+                  ? `Generating (${generationAttempt}/${maxAttempts})...`
+                  : 'Generating...'}
               </>
             ) : (
               <>

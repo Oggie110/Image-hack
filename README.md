@@ -1,73 +1,142 @@
-# React + TypeScript + Vite
+# Image Hack
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**AI-Powered Design Tool with Infinite Canvas**
 
-Currently, two official plugins are available:
+An open-source web-based design and prototyping tool that combines infinite canvas editing with AI image generation. Create wireframes, design mockups, and generate AI images all in one place.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+### Infinite Canvas System
+- Pan and zoom controls (10%-6400%)
+- Multi-frame workflow with presets (mobile, tablet, desktop, social)
+- Frame selection, dragging, and resizing
+- Frame labels and highlighting
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Layer Management
+- Full layer system within frames
+- Tree-based layer panel with expandable frames
+- Drag-and-drop layer reordering within frames
+- Image import via file picker
+- Layer drag, scale, and rotate
+- Layer visibility, opacity, and lock controls
+- Layer thumbnails in panel
+- Z-order management with real-time enforcement
 
-## Expanding the ESLint configuration
+### AI Image Generation
+- Multi-provider architecture (Pollinations.ai, Together.ai, Hugging Face)
+- Text-to-image generation
+- Multiple AI generation modes for specialized use cases
+- AI metadata storage per layer
+- Easy provider switching
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Wireframe & Sketching Tools
+- Built-in drawing tools for wireframing
+- Pen, line, rectangle, circle, and eraser tools
+- Custom eraser cursor showing brush size
+- Sketch directly on canvas
+- Tool-specific cursor feedback
+- Precise object selectability control (objects only movable with select tool)
+- Convert sketches to designs with AI
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Export System
+- Export frames as PNG/JPG/WEBP
+- Multi-frame export (ZIP)
+- Multiple scale options (1x, 2x, 3x)
+- Flatten layers option
+- Per-frame export settings
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### User Experience
+- Comprehensive keyboard shortcuts
+- Undo/redo system (Ctrl+Z, Ctrl+Y)
+- Auto-save to localStorage
+- Layer and frame thumbnails with visual borders
+- Real-time z-order enforcement
+- Auto-switch to select tool after AI generation
+- Auto-expand newly created frames in tree
+- First frame auto-centered on canvas
+- Always-visible layer action buttons (hide, lock, delete)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Getting Started
+
+### Installation
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Development
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+### Build
+
+```bash
+npm run build
+```
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+## AI Provider Setup
+
+Image Hack works out of the box with **Pollinations.ai** (free, no API key required).
+
+For production use, configure **Together.ai** for faster, higher-quality results:
+
+1. Sign up at [together.ai](https://together.ai) (get $25 free credits)
+2. Create a `.env` file:
+   ```env
+   VITE_AI_PROVIDER=together
+   VITE_TOGETHER_API_KEY=your_api_key_here
+   ```
+
+See [AI_PROVIDERS.md](./AI_PROVIDERS.md) for detailed provider comparison and setup.
+
+## Tech Stack
+
+- **React 19** + **TypeScript** - UI framework
+- **Vite** - Build tool
+- **Fabric.js** - Canvas rendering
+- **Zustand** - State management
+- **shadcn/ui** - Component library
+- **Tailwind CSS** - Styling
+
+## Project Structure
+
+```
+src/
+├── components/        # React components
+│   ├── canvas/       # Canvas-related components
+│   ├── dialogs/      # Modal dialogs
+│   └── panels/       # Side panels (layers, frames, tools)
+├── services/         # Business logic
+│   └── ai/          # AI provider integrations
+├── stores/          # Zustand state stores
+├── types/           # TypeScript types
+└── lib/             # Utilities and helpers
+```
+
+## Roadmap
+
+See [ROADMAP.md](./ROADMAP.md) for planned features and priorities.
+
+## Contributing
+
+Contributions are welcome! Please check the roadmap for feature ideas or open an issue to discuss new features.
+
+## License
+
+MIT
+
+## Built With
+
+- React 19.1
+- TypeScript 5.9
+- Vite 7.1
+- Fabric.js 6.7
+- Zustand 5.0
