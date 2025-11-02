@@ -25,10 +25,14 @@ An open-source web-based design and prototyping tool that combines infinite canv
 ### AI Image Generation
 - Multi-provider architecture (Pollinations.ai, Together.ai, Hugging Face)
 - Text-to-image generation
-- **Inpainting/Generative Fill** (Phase 1: Backend ready - UI coming soon)
+- **Generative Fill / Inpainting** (NEW in v0.0.5!)
   - Fill masked regions with AI-generated content
-  - Context-aware generation for UI elements and frames
-  - Hugging Face integration with free API
+  - Perfect for creating UI frames, borders, and decorative elements
+  - Edge/frame mask preset with 4-corner symmetry
+  - Center mask preset for focal content
+  - Context-aware generation using surrounding image
+  - Hugging Face integration (FREE with API key)
+  - Layer replacement workflow
 - Multiple AI generation modes for specialized use cases
 - AI metadata storage per layer
 - Easy provider switching

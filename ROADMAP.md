@@ -92,19 +92,23 @@
 - [x] Frame positioning improvements
 - [x] Enhanced visual feedback throughout UI
 
-## 🔄 In Progress (v0.5 - Phase 1 Complete)
+## ✅ Completed (v0.5 - Generative Fill MVP)
 
-### Generative Fill / Inpainting (Phase 1: Backend - ✅ Complete)
-- [x] Hugging Face inpainting provider integration
-- [x] InpaintingParams type definitions
-- [x] AI Service inpainting methods
-- [x] Layer metadata for inpainting tracking
-- [ ] **Phase 2: UI Components** (Next)
-  - [ ] AIInpaintDialog component
-  - [ ] MaskOverlay canvas component
-  - [ ] Rectangle mask drawing tool
-  - [ ] Symmetry helper system (4-corner mirroring)
-  - [ ] Toolbar integration and keyboard shortcuts
+### Generative Fill / Inpainting (Complete - Both Phases)
+- [x] **Phase 1: Backend**
+  - [x] Hugging Face inpainting provider integration
+  - [x] InpaintingParams type definitions
+  - [x] AI Service inpainting methods
+  - [x] Layer metadata for inpainting tracking
+- [x] **Phase 2: UI & Workflow (MVP)**
+  - [x] AIInpaintDialog component with mask presets
+  - [x] Mask helper utilities with symmetry support
+  - [x] Edge/frame mask preset (15% border)
+  - [x] Center mask preset
+  - [x] 4-corner symmetry system
+  - [x] Toolbar "Generative Fill" button
+  - [x] Layer replacement on successful generation
+  - [x] End-to-end workflow tested
 
 ## 🚀 Next Steps (v0.5)
 

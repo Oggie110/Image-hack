@@ -14,6 +14,7 @@ import { useHistoryStore } from '@/stores/useHistoryStore';
 import { FRAME_PRESETS } from '@/types';
 import { PlusIcon, MagicWandIcon, GearIcon, DownloadIcon, CounterClockwiseClockIcon, ClockIcon } from '@radix-ui/react-icons';
 import { AIGenerateDialog } from '@/components/ai/AIGenerateDialog';
+import { AIInpaintDialog } from '@/components/ai/AIInpaintDialog';
 import { ExportDialog } from '@/components/export/ExportDialog';
 
 export function Toolbar() {
@@ -21,8 +22,9 @@ export function Toolbar() {
   const { frames, addFrame, restoreFrames, getActiveFrame } = useFrameStore();
   const { canUndo, canRedo, undo, redo } = useHistoryStore();
   const [showAIDialog, setShowAIDialog] = useState(false);
+  const [showInpaintDialog, setShowInpaintDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
-  
+
   const activeFrame = getActiveFrame();
 
   const handleAddFrame = (presetName?: string) => {
@@ -122,15 +124,27 @@ export function Toolbar() {
         </DropdownMenu>
 
         {/* AI Generation */}
-        <Button 
-          variant="default" 
-          size="sm" 
+        <Button
+          variant="default"
+          size="sm"
           onClick={() => setShowAIDialog(true)}
           disabled={!activeFrame}
           title={!activeFrame ? 'Please select a frame first' : ''}
         >
           <MagicWandIcon className="mr-2" />
           AI Generate
+        </Button>
+
+        {/* AI Inpainting */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowInpaintDialog(true)}
+          disabled={!activeFrame}
+          title={!activeFrame ? 'Please select a frame and layer first' : 'AI Generative Fill (Ctrl+Shift+I)'}
+        >
+          <MagicWandIcon className="mr-2" />
+          Generative Fill
         </Button>
 
         {/* Export */}
@@ -190,6 +204,9 @@ export function Toolbar() {
 
       {/* AI Generation Dialog */}
       <AIGenerateDialog open={showAIDialog} onOpenChange={setShowAIDialog} />
+
+      {/* AI Inpainting Dialog */}
+      <AIInpaintDialog open={showInpaintDialog} onOpenChange={setShowInpaintDialog} />
 
       {/* Export Dialog */}
       <ExportDialog
