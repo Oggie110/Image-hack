@@ -1,4 +1,4 @@
-import type { AIProvider, GenerationParams, GenerationResult, ProviderName } from './types';
+import type { AIProvider, GenerationParams, GenerationResult, ProviderName, InpaintingParams } from './types';
 import { PollinationsProvider } from './providers/PollinationsProvider';
 import { TogetherProvider } from './providers/TogetherProvider';
 import { HuggingFaceProvider } from './providers/HuggingFaceProvider';
@@ -74,6 +74,38 @@ export class AIService {
       console.error(`Generation failed with ${provider.name}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Generate inpainting (fill masked regions with AI)
+   * Only supported by providers with inpainting capability
+   */
+  async generateInpainting(params: InpaintingParams): Promise<GenerationResult> {
+    const provider = this.getCurrentProvider();
+
+    // Check if provider supports inpainting
+    if (!('generateInpainting' in provider) || typeof (provider as any).generateInpainting !== 'function') {
+      throw new Error(`Provider "${provider.name}" does not support inpainting. Please use Hugging Face provider.`);
+    }
+
+    console.log(`Generating inpainting with ${provider.name}...`);
+
+    try {
+      const result = await (provider as any).generateInpainting(params);
+      console.log(`Inpainting successful in ${result.metadata.generationTime}ms`);
+      return result;
+    } catch (error) {
+      console.error(`Inpainting failed with ${provider.name}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if current provider supports inpainting
+   */
+  supportsInpainting(): boolean {
+    const provider = this.getCurrentProvider();
+    return 'generateInpainting' in provider && typeof (provider as any).generateInpainting === 'function';
   }
 
   /**

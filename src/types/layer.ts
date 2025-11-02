@@ -12,6 +12,10 @@ export interface AIMetadata {
   width: number;
   height: number;
   generatedAt: string;
+  // Inpainting-specific metadata
+  isInpainting?: boolean;
+  originalImageUrl?: string; // URL of the source image before inpainting
+  maskData?: string; // base64 mask used for inpainting (for reference/redo)
 }
 
 export interface SketchMetadata {

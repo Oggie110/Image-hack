@@ -17,6 +17,11 @@ export interface GenerationParams {
   cancelSignal?: { cancelled: boolean };
 }
 
+export interface InpaintingParams extends GenerationParams {
+  image: string; // base64 encoded source image
+  maskImage: string; // base64 encoded mask (white = inpaint, black = preserve)
+}
+
 export interface GenerationResult {
   imageUrl: string;
   metadata: {

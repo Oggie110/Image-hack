@@ -92,9 +92,24 @@
 - [x] Frame positioning improvements
 - [x] Enhanced visual feedback throughout UI
 
+## 🔄 In Progress (v0.5 - Phase 1 Complete)
+
+### Generative Fill / Inpainting (Phase 1: Backend - ✅ Complete)
+- [x] Hugging Face inpainting provider integration
+- [x] InpaintingParams type definitions
+- [x] AI Service inpainting methods
+- [x] Layer metadata for inpainting tracking
+- [ ] **Phase 2: UI Components** (Next)
+  - [ ] AIInpaintDialog component
+  - [ ] MaskOverlay canvas component
+  - [ ] Rectangle mask drawing tool
+  - [ ] Symmetry helper system (4-corner mirroring)
+  - [ ] Toolbar integration and keyboard shortcuts
+
 ## 🚀 Next Steps (v0.5)
 
 ### AI Enhancements
+- [ ] **Generative Fill UI** - Complete Phase 2 (mask tools, symmetry helpers, dialog)
 - [ ] **Sketch-to-image AI model integration** - Use sketches as guides for AI generation (ControlNet)
 - [ ] AI image-to-image editing
 - [ ] AI inpainting (edit parts of images)
