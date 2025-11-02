@@ -83,12 +83,30 @@ export class HuggingFaceProvider implements AIProvider {
     }
 
     const startTime = Date.now();
-    const model = 'runwayml/stable-diffusion-inpainting';
+    // Try diffusers' official SDXL inpainting model
+    const model = 'diffusers/stable-diffusion-xl-1.0-inpainting-0.1';
 
     try {
-      // Strip base64 prefixes if present
-      const imageData = params.image.replace(/^data:image\/\w+;base64,/, '');
-      const maskData = params.maskImage.replace(/^data:image\/\w+;base64,/, '');
+      // Convert base64 to Blob
+      const imageBlob = await this.base64ToBlob(params.image);
+      const maskBlob = await this.base64ToBlob(params.maskImage);
+
+      // Create FormData with proper structure for HuggingFace inpainting API
+      const formData = new FormData();
+      formData.append('inputs', params.prompt);
+      formData.append('image', imageBlob, 'image.png');
+      formData.append('mask_image', maskBlob, 'mask.png');
+
+      // Add parameters as JSON
+      const parameters = {
+        negative_prompt: params.negativePrompt,
+        num_inference_steps: params.steps || 25,
+        guidance_scale: params.guidanceScale || 7.5,
+      };
+      if (params.seed !== undefined) {
+        parameters.seed = params.seed;
+      }
+      formData.append('parameters', JSON.stringify(parameters));
 
       const response = await fetch(
         `https://api-inference.huggingface.co/models/${model}`,
@@ -96,19 +114,8 @@ export class HuggingFaceProvider implements AIProvider {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            inputs: params.prompt,
-            image: imageData,
-            mask_image: maskData,
-            parameters: {
-              negative_prompt: params.negativePrompt,
-              num_inference_steps: params.steps || 25,
-              guidance_scale: params.guidanceScale || 7.5,
-              seed: params.seed,
-            },
-          }),
+          body: formData,
         }
       );
 
@@ -148,6 +155,23 @@ export class HuggingFaceProvider implements AIProvider {
       console.error('Hugging Face inpainting error:', error);
       throw error;
     }
+  }
+
+  /**
+   * Convert base64 data URL to Blob for FormData upload
+   */
+  private async base64ToBlob(base64: string): Promise<Blob> {
+    // Strip data URL prefix if present
+    const base64Data = base64.replace(/^data:image\/\w+;base64,/, '');
+
+    // Convert base64 to binary
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    return new Blob([bytes], { type: 'image/png' });
   }
 
   getSupportedModels(): AIModel[] {

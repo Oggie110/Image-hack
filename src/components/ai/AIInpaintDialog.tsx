@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,11 +20,29 @@ interface AIInpaintDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Create a blank white canvas as a data URL
+ */
+function createBlankImage(width: number, height: number): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  // Fill with white
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, width, height);
+
+  return canvas.toDataURL('image/png');
+}
+
 export function AIInpaintDialog({ open, onOpenChange }: AIInpaintDialogProps) {
-  const { selectedLayerIds, getActiveFrame, getLayer, updateLayer } = useFrameStore();
+  const { selectedLayerIds, getActiveFrame, getLayer, updateLayer, addLayer, deleteLayer, selectLayers } = useFrameStore();
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tempLayerId, setTempLayerId] = useState<string | null>(null);
+  const tempLayerCreated = useRef(false);
 
   // For MVP: simple edge mask preset
   const [maskPreset, setMaskPreset] = useState<'edges' | 'center' | 'custom'>('edges');
@@ -32,6 +50,60 @@ export function AIInpaintDialog({ open, onOpenChange }: AIInpaintDialogProps) {
     enabled: true,
     type: '4-corner',
   });
+
+  // Auto-create temporary blank image layer when dialog opens
+  useEffect(() => {
+    if (!open) {
+      tempLayerCreated.current = false;
+      return;
+    }
+
+    // Only create once per dialog open
+    if (tempLayerCreated.current) return;
+
+    const frame = getActiveFrame();
+    if (!frame) return;
+
+    // Check if we need to create a temporary layer
+    let needsTempLayer = false;
+    let existingLayerId: string | null = null;
+
+    if (selectedLayerIds.length === 0) {
+      needsTempLayer = true;
+    } else {
+      const layerId = selectedLayerIds[0];
+      const layer = getLayer(frame.id, layerId);
+      if (!layer || !layer.imageUrl) {
+        needsTempLayer = true;
+      } else {
+        existingLayerId = layerId;
+      }
+    }
+
+    if (needsTempLayer) {
+      // Create a blank white image matching frame dimensions
+      const blankImageUrl = createBlankImage(frame.width, frame.height);
+
+      // Add layer to frame
+      const newLayerId = addLayer(frame.id, {
+        name: 'Generative Fill Layer',
+        imageUrl: blankImageUrl,
+        width: frame.width,
+        height: frame.height,
+        x: 0,
+        y: 0,
+      });
+
+      // Select the new layer
+      selectLayers([newLayerId]);
+
+      // Track as temporary
+      setTempLayerId(newLayerId);
+      tempLayerCreated.current = true;
+
+      console.log('Created temporary blank layer for generative fill');
+    }
+  }, [open, getActiveFrame, selectedLayerIds, getLayer, addLayer, selectLayers]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -61,7 +133,7 @@ export function AIInpaintDialog({ open, onOpenChange }: AIInpaintDialogProps) {
     const layer = getLayer(frame.id, layerId);
 
     if (!layer || !layer.imageUrl) {
-      setError('Selected layer must have an image');
+      setError('Layer is missing image data');
       return;
     }
 
@@ -161,7 +233,12 @@ export function AIInpaintDialog({ open, onOpenChange }: AIInpaintDialogProps) {
       });
 
       console.log('Inpainting successful!');
-      onOpenChange(false);
+
+      // Clear temp layer status since it now has a real generated image
+      setTempLayerId(null);
+
+      // Close dialog (won't delete layer since tempLayerId is now null)
+      handleDialogClose(false);
       setPrompt('');
     } catch (err: any) {
       console.error('Inpainting failed:', err);
@@ -171,8 +248,22 @@ export function AIInpaintDialog({ open, onOpenChange }: AIInpaintDialogProps) {
     }
   };
 
+  // Handle dialog close - delete temporary layer if cancelled
+  const handleDialogClose = (open: boolean) => {
+    if (!open && tempLayerId) {
+      // Dialog is closing and we have a temporary layer - delete it
+      const frame = getActiveFrame();
+      if (frame) {
+        console.log('Deleting temporary layer:', tempLayerId);
+        deleteLayer(frame.id, tempLayerId);
+        setTempLayerId(null);
+      }
+    }
+    onOpenChange(open);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -180,7 +271,7 @@ export function AIInpaintDialog({ open, onOpenChange }: AIInpaintDialogProps) {
             AI Generative Fill (Inpainting)
           </DialogTitle>
           <DialogDescription>
-            Fill selected regions of your layer with AI-generated content
+            Fill selected regions with AI-generated content
           </DialogDescription>
         </DialogHeader>
 
@@ -189,8 +280,7 @@ export function AIInpaintDialog({ open, onOpenChange }: AIInpaintDialogProps) {
           <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3 text-sm flex gap-2">
             <InfoIcon className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
             <div className="text-blue-700 dark:text-blue-300">
-              <strong>MVP Version:</strong> Select a layer with an image, then enter a prompt to fill
-              the edges (perfect for creating UI frames and borders).
+              <strong>Just enter a prompt!</strong> A blank layer will be auto-created for you. Perfect for creating UI frames, borders, and cyberpunk tech overlays.
             </div>
           </div>
 
@@ -268,7 +358,7 @@ export function AIInpaintDialog({ open, onOpenChange }: AIInpaintDialogProps) {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating}>
+          <Button variant="outline" onClick={() => handleDialogClose(false)} disabled={isGenerating}>
             Cancel
           </Button>
           <Button onClick={handleGenerate} disabled={isGenerating}>

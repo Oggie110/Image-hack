@@ -1,4 +1,4 @@
-import { fabric } from 'fabric';
+import { Canvas, FabricObject } from 'fabric';
 
 export interface MaskRect {
   x: number;
@@ -17,7 +17,7 @@ export interface SymmetrySettings {
 /**
  * Convert a fabric canvas/object to base64 image
  */
-export function canvasToBase64(canvas: fabric.Canvas, format: 'png' | 'jpeg' = 'png', quality = 1.0): string {
+export function canvasToBase64(canvas: Canvas, format: 'png' | 'jpeg' = 'png', quality = 1.0): string {
   return canvas.toDataURL({
     format,
     quality,
@@ -29,19 +29,19 @@ export function canvasToBase64(canvas: fabric.Canvas, format: 'png' | 'jpeg' = '
  * Export a specific layer object to base64
  */
 export function layerObjectToBase64(
-  fabricObject: fabric.Object,
+  fabricObject: FabricObject,
   width: number,
   height: number,
   format: 'png' | 'jpeg' = 'png'
 ): string {
   // Create temporary canvas
-  const tempCanvas = new fabric.Canvas(document.createElement('canvas'), {
+  const tempCanvas = new Canvas(document.createElement('canvas'), {
     width,
     height,
   });
 
   // Clone object and add to temp canvas
-  fabricObject.clone((cloned: fabric.Object) => {
+  fabricObject.clone((cloned: FabricObject) => {
     tempCanvas.add(cloned);
     tempCanvas.centerObject(cloned);
   });
