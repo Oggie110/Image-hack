@@ -2,7 +2,7 @@ import { Canvas } from 'fabric';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import type { Frame, ExportFormat } from '@/types';
-import { getFrameFromCanvas, getFrameLayersFromCanvas } from '@/utils/fabricHelpers';
+import { getFrameLayersFromCanvas } from '@/utils/fabricHelpers';
 
 export interface ExportOptions {
   format: ExportFormat;

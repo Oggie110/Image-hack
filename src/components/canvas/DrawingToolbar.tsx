@@ -2,11 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { useDrawingStore, DrawingTool } from '@/stores/useDrawingStore';
+import { useDrawingStore, type DrawingTool } from '@/stores/useDrawingStore';
 import {
   CursorArrowIcon,
   Pencil2Icon,
-  LineIcon,
+  MinusIcon,
   SquareIcon,
   CircleIcon,
   EraserIcon,
@@ -24,7 +24,7 @@ export function DrawingToolbar() {
   }> = [
     { id: 'select', icon: <CursorArrowIcon />, label: 'Select' },
     { id: 'pen', icon: <Pencil2Icon />, label: 'Pen' },
-    { id: 'line', icon: <LineIcon />, label: 'Line' },
+    { id: 'line', icon: <MinusIcon />, label: 'Line' },
     { id: 'rectangle', icon: <SquareIcon />, label: 'Rectangle' },
     { id: 'circle', icon: <CircleIcon />, label: 'Circle' },
     { id: 'eraser', icon: <EraserIcon />, label: 'Eraser' },
