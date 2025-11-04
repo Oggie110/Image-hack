@@ -30,7 +30,7 @@ interface ExportDialogProps {
 }
 
 export function ExportDialog({ open, onOpenChange, fabricCanvas }: ExportDialogProps) {
-  const { frames, selectedFrameId, getSelectedFrame } = useFrameStore();
+  const { frames, getSelectedFrame } = useFrameStore();
   const selectedFrame = getSelectedFrame();
 
   const [format, setFormat] = useState<ExportFormat>('png');
